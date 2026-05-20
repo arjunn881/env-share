@@ -1,0 +1,40 @@
+{
+  "name": "env-share-cli-tool",
+  "version": "1.0.1",
+  "description": "Ephemeral, zero-setup CLI tool to securely share .env files peer-to-peer",
+  "bin": {
+    "env-share": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup src/index.ts --format cjs --minify --clean",
+    "start": "node dist/index.js",
+    "test:crypto": "tsx src/utils/crypto.test.ts",
+    "test:merge": "tsx src/utils/env.test.ts",
+    "test": "npm run test:crypto && npm run test:merge"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "ora": "^8.0.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/prompts": "^2.4.9",
+    "tsup": "^8.5.1",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.3"
+  },
+  "keywords": [
+    "env",
+    "cli",
+    "secrets",
+    "p2p",
+    "share"
+  ],
+  "author": "Arjuna Nayak",
+  "license": "MIT"
+}

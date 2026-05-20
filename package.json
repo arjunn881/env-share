@@ -1,0 +1,19 @@
+{
+  "name": "env-share-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo for env-share: ephemeral, secure .env file sharing CLI",
+  "workspaces": [
+    "cli",
+    "server"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:cli": "npm run dev --workspace=cli",
+    "build:server": "npm run build --workspace=server",
+    "build:cli": "npm run build --workspace=cli",
+    "build": "npm run build:server && npm run build:cli"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1"
+  }
+}
