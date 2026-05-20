@@ -11,7 +11,8 @@
     "dev:cli": "npm run dev --workspace=cli",
     "build:server": "npm run build --workspace=server",
     "build:cli": "npm run build --workspace=cli",
-    "build": "npm run build:server && npm run build:cli"
+    "build": "npm run build:server && npm run build:cli",
+    "start": "npm run start --workspace=server"
   },
   "devDependencies": {
     "tsup": "^8.5.1"
