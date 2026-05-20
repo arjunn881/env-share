@@ -29,7 +29,7 @@ import { mergeEnv } from "./utils/env.js";
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-const DEFAULT_SERVER = "http://localhost:3000";
+const DEFAULT_SERVER = "https://env-share-1rsi.onrender.com";
 
 /** Pretty-print an Axios or generic error and exit(1). */
 function fatalNetworkError(err: unknown, context: string): never {

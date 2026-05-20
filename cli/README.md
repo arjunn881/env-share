@@ -84,11 +84,11 @@ npm start --workspace=server
 
 ### Using a custom server
 
-Once your server is running (e.g., at `https://relay.yourcompany.com`), just pass the `--server` flag to the CLI:
+Once your server is running (e.g., at `https://env-share-1rsi.onrender.com`), just pass the `--server` flag to the CLI:
 
 ```bash
-npx my-env-share-cli push --server https://relay.yourcompany.com
-npx my-env-share-cli pull <SHARE_CODE> --server https://relay.yourcompany.com
+npx my-env-share-cli push --server https://env-share-1rsi.onrender.com
+npx my-env-share-cli pull <SHARE_CODE> --server https://env-share-1rsi.onrender.com
 ```
 
 ---
