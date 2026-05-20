@@ -98,6 +98,9 @@ export function validateEnvFile(
   let raw: string;
   try {
     raw = fs.readFileSync(resolvedPath, "utf8");
+    // Fix for Windows PowerShell which defaults to UTF-16 LE:
+    // Strip null bytes and Byte Order Marks so parsing works flawlessly.
+    raw = raw.replace(/\0/g, "").replace(/^\uFEFF/, "");
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(

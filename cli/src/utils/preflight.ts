@@ -76,7 +76,11 @@ export function runPreflight(cwd: string = process.cwd()): void {
   }
 
   // -- Check 2: .gitignore must cover .env files -----------------------------
-  const content = fs.readFileSync(gitignorePath, "utf8");
+  let content = fs.readFileSync(gitignorePath, "utf8");
+  
+  // Fix for Windows PowerShell which defaults to UTF-16 LE:
+  // Strip null bytes and Byte Order Marks so the regex works flawlessly.
+  content = content.replace(/\0/g, "").replace(/^\uFEFF/, "");
 
   if (!gitignoreCoversEnv(content)) {
     console.error(
