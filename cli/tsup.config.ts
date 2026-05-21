@@ -11,9 +11,9 @@ export default defineConfig({
   sourcemap: false,
   minify: true,
   shims: true,          // __dirname / __filename shims for ESM→CJS interop
-  // Note: No banner shebang here. When installed via `npm install -g` or
-  // `npm link`, npm generates a shell wrapper that adds the shebang automatically.
-  // For direct `node dist/index.js` invocation (dev/CI), no shebang is needed.
+  banner: {
+    js: "#!/usr/bin/env node",  // Required: npm validates that bin files have a shebang
+  },
   noExternal: [
     "chalk",
     "ora",
