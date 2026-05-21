@@ -229,7 +229,7 @@ program
         { timeout: 10_000 }
       );
       serverPayload = response.data;
-      spinner.succeed(chalk.dim("Payload fetched — deleting from relay (burn-after-reading)."));
+      spinner.succeed(chalk.dim("Payload fetched & deleting from relay (burn-after-reading)."));
     } catch (err) {
       spinner.fail(chalk.red("Fetch failed."));
       fatalNetworkError(err, "FETCH");

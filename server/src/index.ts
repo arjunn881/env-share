@@ -204,7 +204,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void =>
 // ---------------------------------------------------------------------------
 
 app.listen(PORT, () => {
-  console.log(`\n🔒 env-share relay server running on http://localhost:${PORT}`);
+  console.log(`\n env-share relay server running on http://localhost:${PORT}`);
   console.log(`   TTL: ${TTL_SECONDS / 60} min | Rate limit: ${RATE_LIMIT_MAX} req/min/IP\n`);
 });
 

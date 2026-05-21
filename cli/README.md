@@ -1,98 +1,147 @@
-# 🔒 env-share
+# env-share
 
-**An ephemeral, zero-setup CLI tool for developers to securely share `.env` files peer-to-peer.**
+An ephemeral, zero-setup CLI tool for developers to securely share .env files peer-to-peer.
 
-Stop copy-pasting your environment variables through Slack, Discord, or iMessage. `env-share` uses end-to-end encryption and a "burn-after-reading" relay server to ensure your secrets stay secret.
+Stop copy-pasting your environment variables through Slack, Discord, or email. env-share uses end-to-end encryption and a "burn-after-reading" relay server to ensure your secrets stay secret.
 
 ---
 
-## ✨ Features
+## Features
 
 - **Zero-Knowledge E2E Encryption**: Uses AES-256-GCM. The encryption key never leaves your machine and is never sent to the relay server.
 - **Burn-After-Reading**: Payloads are instantly and permanently deleted from the relay server the moment they are pulled.
-- **Smart Merging**: If the receiver already has a `.env` file, `env-share` interactively prompts you to resolve any conflicting keys (Local vs. Remote) without wiping out your existing setup.
-- **Git Guardrails**: The CLI strictly refuses to run unless your project has a `.gitignore` file that actively ignores `.env` files, preventing accidental secret commits.
-- **Zero Setup**: Works out of the box via `npx`. No accounts, no logins, no configuration.
+- **Smart Merging**: If the receiver already has a .env file, env-share interactively prompts you to resolve any conflicting keys (Local vs. Remote) instead of overwriting your entire file.
+- **Git Guardrails**: The CLI strictly refuses to run unless your project has a .gitignore file that actively ignores .env files, preventing accidental secret commits.
+- **Zero Setup**: Works out of the box via npx. No accounts, no logins, no configuration.
 
 ---
 
-## 🚀 Usage
+## Workflow: 1 Project, 2 Contributors
 
-You can use `env-share` directly via `npx` in any project directory.
+Here is the exact step-by-step process for securely sharing an environment configuration between two developers working on the same repository.
 
-### 📤 Sharing an environment file (Push)
+### Scenario
+- **Developer A (The Sender)** has the latest local .env file containing the required project secrets.
+- **Developer B (The Receiver)** has cloned the repository but does not have a local .env file yet (or has an outdated one).
 
-From the project directory containing your `.env` file:
+### Step 1: Developer A pushes the environment variables
+Developer A navigates to the root of their local project directory and runs:
 
 ```bash
-npx my-env-share-cli push
+npx env-share-cli-tool push
 ```
 
 The CLI will:
-1. Validate your `.gitignore` to keep you safe.
-2. Encrypt your `.env` file locally.
-3. Upload the ciphertext to the relay.
-4. Output a **Share Code** (e.g., `apple-brave-cloud#50bbfaebb9...`).
+1. Verify that a .gitignore exists and correctly ignores `.env` files to keep your repository safe.
+2. Generate a random 256-bit encryption key locally.
+3. Encrypt the .env file with AES-256-GCM using that key.
+4. Upload the encrypted ciphertext to the default relay server.
+5. Print a secure Share Code containing a friendly 3-word phrase and the encryption key (separated by a hash character):
 
-Give this share code to your teammate out-of-band. **The code expires in 10 minutes.**
+```text
+Share Code: apple-brave-cloud#50bbfaebb9...
+```
 
-### 📥 Receiving an environment file (Pull)
+*Note: The key after the "#" symbol remains completely local. It is never transmitted to the relay server.*
 
-Your teammate navigates to their local project directory and runs:
+### Step 2: Developer A sends the Share Code to Developer B
+Developer A copies the printed Share Code and shares it with Developer B through a secure channel (e.g., Slack, Signal, Microsoft Teams).
+
+**The code will expire and be permanently deleted from the relay server after 10 minutes if it is not pulled.**
+
+### Step 3: Developer B pulls the environment variables
+Developer B navigates to the root of their cloned repository and runs the pull command:
 
 ```bash
-npx my-env-share-cli pull <SHARE_CODE>
+npx env-share-cli-tool pull apple-brave-cloud#50bbfaebb9...
 ```
 
 The CLI will:
-1. Verify their `.gitignore`.
-2. Fetch the ciphertext and immediately burn it from the relay.
-3. Decrypt the payload locally using the hex key inside the share code.
-4. If a local `.env` already exists, smartly merge the keys, prompting the user to resolve any conflicts.
+1. Confirm that Developer B's local .gitignore correctly ignores `.env` files.
+2. Request the ciphertext associated with `apple-brave-cloud` from the relay server.
+3. Once the relay server sends the payload, **the server instantly and permanently deletes (burns) the ciphertext from its database.**
+4. Decrypt the payload locally using the encryption key (`50bbfaebb9...`) extracted from the Share Code.
+5. Save the environment variables to Developer B's local `.env` file.
+
+*If Developer B already has an existing `.env` file, the CLI will not overwrite it blindly. Instead, it will prompt Developer B to interactively choose whether to keep their local value or overwrite it with Developer A's value for each conflicting key.*
 
 ---
 
-## 🛡️ Security Model
+## CLI Usage Reference
 
-How does `env-share` guarantee your secrets aren't stolen?
-
-1. **Local Encryption**: When you run `push`, the CLI generates a completely random 256-bit symmetric key and a 96-bit Initialization Vector (IV).
-2. **AES-256-GCM**: The `.env` file is encrypted using AES-256-GCM, producing an opaque ciphertext and a 128-bit Authentication Tag.
-3. **The Split**: 
-   - The `ciphertext`, `IV`, and `Auth Tag` are sent to the relay server.
-   - The relay assigns this payload a 3-word phrase (e.g., `apple-brave-cloud`).
-   - The CLI appends your local 256-bit key to this phrase: `apple-brave-cloud#<HEX_KEY>`.
-4. **Decryption**: The receiver sends `apple-brave-cloud` to the server to get the payload, then uses the `<HEX_KEY>` half of their share code to decrypt and verify the Auth Tag locally. **The server never sees the key.**
-
----
-
-## 🏗️ Self-Hosting the Relay Server
-
-By default, the CLI uses a public relay server. For enterprise teams, you can easily host the temporary relay server yourself. 
-
-The server is extremely lightweight, uses an in-memory TTL cache (no Redis required), and includes strict rate-limiting (10 req/min/IP).
-
-### Setup
+### Push (Share)
+Encrypt and share a local .env file.
 
 ```bash
-git clone https://github.com/your-username/env-share.git
-cd env-share
-npm install
-npm run build
-npm start --workspace=server
+npx env-share-cli-tool push [options]
 ```
 
-### Using a custom server
+**Options:**
+- `--server <url>`: Specify a custom relay server URL.
 
-Once your server is running (e.g., at `https://env-share-1rsi.onrender.com`), just pass the `--server` flag to the CLI:
+### Pull (Receive)
+Fetch, decrypt, and merge a shared .env file.
 
 ```bash
-npx my-env-share-cli push --server https://env-share-1rsi.onrender.com
-npx my-env-share-cli pull <SHARE_CODE> --server https://env-share-1rsi.onrender.com
+npx env-share-cli-tool pull <share-code> [options]
+```
+
+**Options:**
+- `--server <url>`: Specify a custom relay server URL.
+
+---
+
+## Security Model
+
+How does env-share guarantee that your secrets are never exposed?
+
+1. **Local Encryption**: When you run `push`, the CLI generates a cryptographically strong, random 256-bit symmetric key and a 96-bit Initialization Vector (IV) in your local memory.
+2. **AES-256-GCM**: The contents of your .env file are encrypted using AES-256-GCM, which produces the ciphertext and a 128-bit Authentication Tag for integrity verification.
+3. **The Split**:
+   - The ciphertext, IV, and Authentication Tag are sent to the relay server.
+   - The relay server responds with a temporary 3-word identifier (e.g., `apple-brave-cloud`).
+   - The CLI constructs the final Share Code locally: `<identifier>#<hex-key>`.
+4. **Decryption**: The receiver's CLI extracts the `<identifier>` to request the payload from the relay, and then uses the `<hex-key>` to decrypt the ciphertext locally.
+5. **No Key Transmission**: The 256-bit encryption key is never transmitted to the server in any form. Even if the relay server is compromised, the attacker cannot read your secrets because they do not have the decryption key.
+
+---
+
+## Self-Hosting the Relay Server
+
+By default, the CLI uses a public relay server. For team or enterprise use cases, you can easily self-host the relay server.
+
+The server is extremely lightweight, uses a robust in-memory time-to-live (TTL) cache (no Redis/database configuration required), and enforces rate-limiting (10 requests per minute per IP).
+
+### Setup and Start
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/your-username/env-share.git
+   cd env-share
+   ```
+
+2. Install dependencies and build the server:
+   ```bash
+   npm install
+   npm run build
+   ```
+
+3. Start the server workspace:
+   ```bash
+   npm start --workspace=server
+   ```
+
+### Using Your Custom Relay Server
+
+To instruct the CLI to use your custom server instead of the public default, pass the `--server` flag:
+
+```bash
+npx env-share-cli-tool push --server https://your-server-url.com
+npx env-share-cli-tool pull <share-code> --server https://your-server-url.com
 ```
 
 ---
 
-## 📜 License
+## License
 
 MIT License.
