@@ -36,5 +36,9 @@
     "share"
   ],
   "author": "Arjuna Nayak",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arjunn881/env-share.git"
+  },
   "license": "MIT"
 }
