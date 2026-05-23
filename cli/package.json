@@ -1,9 +1,9 @@
 {
   "name": "share-env",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Ephemeral, zero-setup CLI tool to securely share .env files peer-to-peer",
   "bin": {
-    "share-env": "./dist/index.js"
+    "share-env": "dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
