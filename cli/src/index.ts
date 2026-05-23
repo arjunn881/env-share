@@ -104,7 +104,7 @@ function printShareCode(shareCode: string): void {
 const program = new Command();
 
 program
-  .name("env-share")
+  .name("share-env")
   .description(
     chalk.cyan.bold("env-share") +
       " — ephemeral, zero-setup peer-to-peer .env sharing\n" +

@@ -101,12 +101,12 @@ No installation is required. Run directly using `npx`:
 
 **Sender:**
 ```bash
-npx env-share-cli push
+npx share-env push
 ```
 
 **Receiver:**
 ```bash
-npx env-share-cli pull <share-code>
+npx share-env pull <share-code>
 ```
 
 ---
@@ -148,7 +148,7 @@ cd /path/to/your/project
 ### Step 3: Developer A runs the push command
 
 ```bash
-npx env-share-cli push
+npx share-env push
 ```
 
 The tool will perform the following actions automatically:
@@ -211,7 +211,7 @@ cd /path/to/your/project
 Developer B runs the following command, replacing `<share-code>` with the full code received from Developer A:
 
 ```bash
-npx env-share-cli pull apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1
+npx share-env pull apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1
 ```
 
 The tool will perform the following actions:
@@ -272,7 +272,7 @@ The `.env` file is now ready to use. The share code is permanently burned and ca
 Encrypt and upload the local `.env` file to the relay server.
 
 ```
-npx env-share-cli push [options]
+npx share-env push [options]
 ```
 
 | Option | Type | Default | Description |
@@ -284,13 +284,13 @@ npx env-share-cli push [options]
 
 ```bash
 # Share the default .env in the current directory
-npx env-share-cli push
+npx share-env push
 
 # Share a file at a custom path
-npx env-share-cli push --file ./config/.env.production
+npx share-env push --file ./config/.env.production
 
 # Use a custom self-hosted relay server
-npx env-share-cli push --server https://your-relay.example.com
+npx share-env push --server https://your-relay.example.com
 ```
 
 ---
@@ -300,7 +300,7 @@ npx env-share-cli push --server https://your-relay.example.com
 Download, decrypt, and merge a shared `.env` file.
 
 ```
-npx env-share-cli pull <share-code> [options]
+npx share-env pull <share-code> [options]
 ```
 
 | Argument | Required | Description |
@@ -316,13 +316,13 @@ npx env-share-cli pull <share-code> [options]
 
 ```bash
 # Pull into the default .env in the current directory
-npx env-share-cli pull apple-brave-cloud#a3f9b2c1...
+npx share-env pull apple-brave-cloud#a3f9b2c1...
 
 # Pull into a custom file path
-npx env-share-cli pull apple-brave-cloud#a3f9b2c1... --file ./config/.env.local
+npx share-env pull apple-brave-cloud#a3f9b2c1... --file ./config/.env.local
 
 # Pull using a custom relay server
-npx env-share-cli pull apple-brave-cloud#a3f9b2c1... --server https://your-relay.example.com
+npx share-env pull apple-brave-cloud#a3f9b2c1... --server https://your-relay.example.com
 ```
 
 ---
@@ -472,8 +472,8 @@ PORT=8080 npm start --workspace=server
 Pass the `--server` flag to both `push` and `pull`:
 
 ```bash
-npx env-share-cli push --server https://your-relay.example.com
-npx env-share-cli pull <share-code> --server https://your-relay.example.com
+npx share-env push --server https://your-relay.example.com
+npx share-env pull <share-code> --server https://your-relay.example.com
 ```
 
 ### Relay server configuration
