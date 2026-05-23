@@ -1,5 +1,5 @@
 {
-  "name": "env-share-cli-tool",
+  "name": "env-share-cli",
   "version": "1.0.6",
   "description": "Ephemeral, zero-setup CLI tool to securely share .env files peer-to-peer",
   "bin": {

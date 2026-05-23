@@ -279,6 +279,12 @@ program
         chalk.underline(envPath) +
         "\n"
     );
+
+
+
+   console.log(chalk.dim('\n---'));
+   console.log(chalk.dim('Built by Arjuna - Full-Stack Developer.'));
+   console.log(chalk.dim('Connect with me: https://github.com/arjunn881'));
   });
 
 // ---------------------------------------------------------------------------
