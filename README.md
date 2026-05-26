@@ -1,3 +1,5 @@
+https://github.com/arjunn881/env-share/blob/main/mp_.mp4
+
 # env-share
 
 A command-line tool for securely sharing `.env` files between developers using end-to-end encryption and an ephemeral relay server. No accounts, no configuration, no secrets stored anywhere.
