@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+
 /**
  * index.ts — env-share CLI entry point
  *
