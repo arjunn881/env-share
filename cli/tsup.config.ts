@@ -20,6 +20,6 @@ export default defineConfig({
     "commander",
     "axios",
     "dotenv",
-    "prompts",
+    "@inquirer/prompts",
   ],
 });

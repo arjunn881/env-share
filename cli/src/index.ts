@@ -24,7 +24,8 @@ import { checkGitIgnore } from "./utils/git.js";
 import { validateEnvFile } from "./utils/env-validator.js";
 import { encryptEnv, decryptEnv, type ServerPayload } from "./utils/crypto.js";
 import { mergeEnv } from "./utils/env.js";
-
+import { checkbox } from "@inquirer/prompts";
+import dotenv from "dotenv";
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
@@ -117,16 +118,26 @@ program
 // ---------------------------------------------------------------------------
 
 program
-  .command("push")
+  .command("push [scope]")
   .description("Encrypt and upload your .env to the relay, receive a share code")
-  .option("-f, --file <path>", "Path to the .env file to share", ".env")
+  .option("-s, --select", "Interactively select which variables to share")
+  .option("-f, --file <path>", "Path to the .env file to share")
   .option("--server <url>", "Relay server base URL", DEFAULT_SERVER)
-  .action(async (opts: { file: string; server: string }) => {
-    // ── 1. Safety guardrails ────────────────────────────────────────────────
+  .action(async (scope: string | undefined, opts: { select?: boolean; file?: string; server: string }) => {
+    // ── 1. File Resolution ───────────────────────────────────────────────────
+    let targetFileName = ".env";
+    if (scope) {
+      targetFileName = `.env.${scope}`;
+    }
+    if (opts.file) {
+      targetFileName = opts.file;
+    }
+
+    // ── 2. Safety guardrails ────────────────────────────────────────────────
     checkGitIgnore();
 
-    // ── 2. Validate .env ────────────────────────────────────────────────────
-    const { raw, filePath, keyCount } = validateEnvFile(opts.file);
+    // ── 3. Validate & Parse .env ────────────────────────────────────────────
+    let { raw, filePath, keyCount } = validateEnvFile(targetFileName);
     console.log(
       "\n" +
         chalk.green("  ✔") +
@@ -135,10 +146,47 @@ program
         )
     );
 
-    // ── 3. Encrypt ──────────────────────────────────────────────────────────
-    const { localKeyHex, serverPayload } = encryptEnv(raw);
+    // ── 4. Selective Push Logic ─────────────────────────────────────────────
+    if (opts.select) {
+      const parsed = dotenv.parse(raw);
+      const keys = Object.keys(parsed);
+      
+      if (keys.length === 0) {
+        console.log(chalk.yellow("  No keys found to share. Exiting."));
+        process.exit(0);
+      }
 
-    // ── 4. Upload ───────────────────────────────────────────────────────────
+      const selectedKeys = await checkbox({
+        message: 'Select variables to share:',
+        choices: keys.map(k => ({ name: k, value: k, checked: true }))
+      });
+
+      if (selectedKeys.length === 0) {
+        console.log(chalk.yellow("  No variables selected. Exiting."));
+        process.exit(0);
+      }
+
+      raw = selectedKeys.map(k => `${k}=${parsed[k]}`).join("\n");
+      keyCount = selectedKeys.length;
+      
+      console.log(
+        chalk.green("  ✔") +
+        chalk.dim(
+          `  Selected ${chalk.bold(String(keyCount))} key(s) to share.`
+        )
+      );
+    }
+
+    // ── 5. Encrypt ──────────────────────────────────────────────────────────
+    const { localKeyHex, serverPayload } = encryptEnv(raw);
+    
+    const targetFileBaseName = path.basename(filePath);
+    const payloadToUpload = { 
+      ...serverPayload, 
+      metadata: { targetFile: targetFileBaseName } 
+    };
+
+    // ── 6. Upload ───────────────────────────────────────────────────────────
     const spinner = ora({
       text: chalk.dim("Uploading encrypted payload to relay…"),
       color: "cyan",
@@ -149,7 +197,7 @@ program
     try {
       const response = await axios.post<{ phrase: string }>(
         `${opts.server}/push`,
-        serverPayload,
+        payloadToUpload,
         {
           headers: { "Content-Type": "application/json" },
           timeout: 10_000,
@@ -163,7 +211,7 @@ program
       fatalNetworkError(err, "UPLOAD");
     }
 
-    // ── 5. Build & display share code ───────────────────────────────────────
+    // ── 7. Build & display share code ───────────────────────────────────────
     //
     //  Format:  <3-word-phrase>#<64-char-hex-key>
     //
@@ -181,9 +229,9 @@ program
 program
   .command("pull <shareCode>")
   .description("Download, decrypt, and merge a shared .env into your local one")
-  .option("-f, --file <path>", "Target .env file path", ".env")
+  .option("-f, --file <path>", "Target .env file path")
   .option("--server <url>", "Relay server base URL", DEFAULT_SERVER)
-  .action(async (shareCode: string, opts: { file: string; server: string }) => {
+  .action(async (shareCode: string, opts: { file?: string; server: string }) => {
     // ── 1. Safety guardrails ────────────────────────────────────────────────
     checkGitIgnore();
 
@@ -199,7 +247,7 @@ program
               "  Expected: " +
               chalk.yellow("<word-word-word#hexKey>") +
               "\n\n" +
-              chalk.dim("  Copy the full share code exactly as printed by `env-share push`.")
+              chalk.dim("  Copy the full share code exactly as printed by `share-env push`.")
           )
       );
       process.exit(1);
@@ -221,10 +269,11 @@ program
       color: "cyan",
     }).start();
 
-    let serverPayload: ServerPayload;
+    type ExtendedPayload = ServerPayload & { metadata?: { targetFile: string } };
+    let serverPayload: ExtendedPayload;
 
     try {
-      const response = await axios.get<ServerPayload>(
+      const response = await axios.get<ExtendedPayload>(
         `${opts.server}/pull/${encodeURIComponent(phrase)}`,
         { timeout: 10_000 }
       );
@@ -254,33 +303,33 @@ program
       process.exit(1);
     }
 
-    // ── 5. Merge or write ───────────────────────────────────────────────────
-    const envPath = path.resolve(opts.file);
+    // ── 5. File Resolution ──────────────────────────────────────────────────
+    const targetFileName = opts.file || serverPayload.metadata?.targetFile || ".env";
+    const envPath = path.resolve(targetFileName);
     let finalContent: string;
 
+    // ── 6. Merge or write ───────────────────────────────────────────────────
     if (fs.existsSync(envPath)) {
       const localContent = fs.readFileSync(envPath, "utf8");
       console.log(
-        chalk.dim(`\n  Existing .env found at ${chalk.underline(envPath)} — starting merge…\n`)
+        chalk.dim(`\n  Existing file found at ${chalk.underline(envPath)} — starting merge…\n`)
       );
       finalContent = await mergeEnv(localContent, plaintext);
     } else {
-      console.log(chalk.dim(`\n  No existing .env — writing fresh file.\n`));
+      console.log(chalk.dim(`\n  No existing file at ${chalk.underline(envPath)} — writing fresh file.\n`));
       finalContent = plaintext;
     }
 
-    // ── 6. Write to disk ────────────────────────────────────────────────────
+    // ── 7. Write to disk ────────────────────────────────────────────────────
     fs.writeFileSync(envPath, finalContent + "\n", "utf8");
 
     console.log(
       "\n" +
         chalk.bold.green("  ✔  Done!") +
-        chalk.dim("  .env written to: ") +
+        chalk.dim(`  ${targetFileName} written to: `) +
         chalk.underline(envPath) +
         "\n"
     );
-
-
 
    console.log(chalk.dim('\n---'));
    console.log(chalk.dim('Built by Arjuna - Full-Stack Developer.'));
