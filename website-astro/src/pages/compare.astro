@@ -1,0 +1,243 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const tools = [
+  { name: 'share-env', highlight: true },
+  { name: 'Slack DM' },
+  { name: 'Email' },
+  { name: 'GPG file' },
+  { name: '1Password Teams' },
+  { name: 'HashiCorp Vault' },
+];
+
+const features = [
+  {
+    label: 'End-to-end encrypted',
+    vals: ['AES-256-GCM', 'No', 'No', 'Yes (manual)', 'Yes', 'Yes'],
+    statuses: ['yes','no','no','partial','yes','yes'],
+  },
+  {
+    label: 'Decryption key leaves your machine',
+    vals: ['Never', 'Yes (plaintext)', 'Yes (plaintext)', 'Key shared separately', 'Server holds it', 'Server holds it'],
+    statuses: ['yes','no','no','partial','partial','partial'],
+  },
+  {
+    label: 'Burn-after-reading',
+    vals: ['Yes (1 pull)', 'No (permanent)', 'No (permanent)', 'No', 'No', 'No'],
+    statuses: ['yes','no','no','no','no','no'],
+  },
+  {
+    label: 'Auto-expiry TTL',
+    vals: ['10 min', 'Never', 'Never', 'No', 'Configurable', 'Configurable'],
+    statuses: ['yes','no','no','no','partial','partial'],
+  },
+  {
+    label: 'Account required',
+    vals: ['No', 'Yes', 'No', 'No', 'Yes', 'Yes'],
+    statuses: ['yes','no','yes','yes','no','no'],
+  },
+  {
+    label: 'Setup time',
+    vals: ['Seconds (npx)', 'None', 'None', 'Minutes', 'Minutes', 'Hours'],
+    statuses: ['yes','partial','partial','partial','partial','no'],
+  },
+  {
+    label: 'Git guardrail',
+    vals: ['Mandatory', 'None', 'None', 'None', 'None', 'None'],
+    statuses: ['yes','no','no','no','no','no'],
+  },
+  {
+    label: 'Smart merge on conflict',
+    vals: ['Yes', 'No', 'No', 'No', 'No', 'No'],
+    statuses: ['yes','no','no','no','no','no'],
+  },
+  {
+    label: 'Audit log',
+    vals: ['None', 'Workspace logs', 'Email logs', 'None', 'Yes', 'Yes'],
+    statuses: ['partial','no','no','no','yes','yes'],
+  },
+  {
+    label: 'Open source',
+    vals: ['MIT', 'No', 'N/A', 'Yes (GPG)', 'No', 'BSL 1.1'],
+    statuses: ['yes','no','yes','yes','no','partial'],
+  },
+  {
+    label: 'Self-hostable',
+    vals: ['Yes (relay)', 'No', 'N/A', 'N/A', 'No', 'Yes'],
+    statuses: ['yes','no','yes','yes','no','yes'],
+  },
+  {
+    label: 'Cost',
+    vals: ['Free', 'Paid workspace', 'Free', 'Free', 'Paid', 'Free/Paid'],
+    statuses: ['yes','no','yes','yes','no','partial'],
+  },
+];
+---
+
+<Base
+  title="share-env vs Slack, Email, GPG, 1Password, Vault — .env Sharing Tool Comparison"
+  description="Compare share-env against Slack, email, GPG, 1Password Teams, and HashiCorp Vault for secure .env file sharing. See which tool actually keeps your dotenv secrets safe."
+  keywords="share env vs slack, dotenv sharing alternative slack, .env file sharing comparison, share env vs email, secure .env alternative, dotenv sharing tool comparison, share-env vs vault, share-env vs gpg, best .env file sharing tool, secure dotenv alternative"
+  pageType="CollectionPage"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Compare</span>
+      </nav>
+      <p class="sl">Compare</p>
+      <h1>share-env vs every other option.</h1>
+      <p class="desc">A honest, feature-by-feature comparison of every way developers currently <strong>share .env files</strong> — from the popular to the dangerous.</p>
+    </div>
+
+    <!-- Quick answer box -->
+    <div class="answer-box rv" style="margin-bottom:48px;">
+      <div class="ab-q">What is the safest way to share a .env file?</div>
+      <div class="ab-a">The safest method is to use an end-to-end encrypted, burn-after-reading tool that never transmits the decryption key to any server. share-env does this using AES-256-GCM, where the relay only stores ciphertext and the payload self-destructs after one pull — making it impossible to intercept after the fact.</div>
+    </div>
+
+    <!-- Comparison table -->
+    <section style="padding-top:0;">
+      <div class="sh">
+        <p class="sl rv">Feature Matrix</p>
+        <h2 class="st rv d1">How <span class="grad">share-env</span> compares.</h2>
+        <p class="ss rv d2">Green = secure/available. Yellow = partial/limited. Red = not available/insecure.</p>
+      </div>
+
+      <div style="overflow-x:auto;" class="rv">
+        <table class="cmp-table" role="table" aria-label="share-env vs other .env sharing tools comparison">
+          <thead>
+            <tr>
+              <th scope="col">Feature</th>
+              {tools.map(t => (
+                <th scope="col" style={t.highlight ? 'color:var(--accent);' : ''}>{t.name}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {features.map(row => (
+              <tr class={row.label === 'End-to-end encrypted' || row.label === 'Burn-after-reading' ? 'cmp-highlight' : ''}>
+                <td class="feat-col">{row.label}</td>
+                {row.vals.map((val, i) => {
+                  const s = row.statuses[i];
+                  return (
+                    <td>
+                      {i === 0 ? (
+                        <span class="cmp-yes">{val}</span>
+                      ) : s === 'yes' ? (
+                        <span class="cmp-yes">{val}</span>
+                      ) : s === 'no' ? (
+                        <span class="cmp-no">{val}</span>
+                      ) : (
+                        <span class="cmp-partial">{val}</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+
+    <!-- Why not alternatives -->
+    <section>
+      <div class="sh">
+        <p class="sl rv">Why not the others?</p>
+        <h2 class="st rv d1">The hidden dangers of each alternative.</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;" class="alt-g">
+        {[
+          {
+            title: 'Why not Slack / Discord?',
+            icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
+            color: 'var(--danger)',
+            points: [
+              'Messages stored permanently in Slack logs',
+              'Searchable by workspace admins and future employees',
+              'Exposed in any workspace data breach',
+              'No expiry — sits in history indefinitely',
+              'Bots and integrations may read the channel',
+            ],
+          },
+          {
+            title: 'Why not Email?',
+            icon: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z',
+            color: 'var(--warn)',
+            points: [
+              'Sent in plaintext unless explicitly encrypted',
+              'Stored on mail server, potentially forever',
+              'Email threads can be forwarded accidentally',
+              'No expiry or burn-after-reading',
+              'Phishing attacks can intercept emails',
+            ],
+          },
+          {
+            title: 'Why not GPG?',
+            icon: 'M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4',
+            color: 'var(--accent-4)',
+            points: [
+              'Complex key management and key exchange',
+              'Sharing the passphrase has the same security problem',
+              'No burn-after-reading — file can be shared further',
+              'Error-prone for non-technical teammates',
+              'No git guardrail or merge conflict handling',
+            ],
+          },
+          {
+            title: 'Why not 1Password Teams / Vault?',
+            icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
+            color: 'var(--accent-3)',
+            points: [
+              'Server holds the decryption key — not zero-knowledge',
+              'Account required for every team member',
+              'Monthly cost per user seat',
+              'Overhead for one-off dev-to-dev sharing',
+              'Not designed for CLI / terminal workflows',
+            ],
+          },
+        ].map(alt => (
+          <div class="glass-card rv" style="padding:28px 24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <div style={`width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,0.05);color:${alt.color};display:flex;align-items:center;justify-content:center;flex-shrink:0;`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={alt.icon}/></svg>
+              </div>
+              <h3 style="font-size:.93rem;font-weight:700;margin:0;">{alt.title}</h3>
+            </div>
+            <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+              {alt.points.map(p => (
+                <li style="font-size:.84rem;color:var(--text-muted);display:flex;gap:9px;align-items:flex-start;line-height:1.5;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section style="padding:64px 0;text-align:center;">
+      <p class="sl rv" style="justify-content:center;">The better way</p>
+      <h2 class="st rv d1" style="max-width:480px;margin:0 auto 18px;">Stop sharing <span class="grad">.env files</span> the dangerous way.</h2>
+      <p class="ss rv d2" style="margin:0 auto 28px;text-align:center;">share-env takes 10 seconds and is genuinely secure.</p>
+      <div class="rv d3" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="/" class="btn btn-p">Get started &rarr;</a>
+        <a href="/docs" class="btn btn-s">Read the docs</a>
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+  </div>
+
+  <style>
+    @media(max-width:960px){ .alt-g{ grid-template-columns:1fr !important; } }
+  </style>
+</Base>

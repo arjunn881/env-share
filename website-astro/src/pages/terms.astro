@@ -1,0 +1,89 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Terms of Service — share-env"
+  description="Terms of Service for env.json2x.com and the share-env CLI tool. Read our terms before using this website or tool."
+>
+  <div class="container">
+    <div class="page-hero">
+      <p class="sl">Legal</p>
+      <h1>Terms of Service</h1>
+      <p class="desc">Last updated: December 2024</p>
+    </div>
+
+    <div style="max-width:780px;" class="prose rv">
+      <p>These Terms of Service ("Terms") govern your use of <strong>env.json2x.com</strong> (the "Website") and the <code>share-env</code> CLI tool (the "Tool"). By accessing or using the Website or Tool, you agree to be bound by these Terms. If you do not agree, please do not use the Website or Tool.</p>
+
+      <h2>1. Acceptance of Terms</h2>
+      <p>By accessing or using the Website or Tool, you confirm that you are at least 13 years old, have read and understood these Terms, and agree to be bound by them.</p>
+
+      <h2>2. Description of Service</h2>
+      <p>The <code>share-env</code> tool is an open-source command-line utility that enables developers to securely share <code>.env</code> files using end-to-end encryption. The Website provides documentation, security information, guides, and a blog about related topics.</p>
+
+      <p>The relay server used by the Tool:</p>
+      <ul>
+        <li>Stores only AES-256-GCM encrypted ciphertext</li>
+        <li>Automatically deletes payloads upon first retrieval (burn-after-reading)</li>
+        <li>Automatically deletes uncollected payloads after 10 minutes</li>
+        <li>Does not store, log, or transmit decryption keys</li>
+      </ul>
+
+      <h2>3. User Responsibilities</h2>
+      <p>By using the Tool, you agree that you will:</p>
+      <ul>
+        <li>Only share <code>.env</code> files that you are authorized to share</li>
+        <li>Treat share codes with the same care as passwords</li>
+        <li>Not use the Tool to share malicious, illegal, or harmful content</li>
+        <li>Not attempt to reverse-engineer, abuse, or overload the relay server</li>
+        <li>Not use automated scripts to generate excessive relay traffic</li>
+        <li>Comply with all applicable laws and regulations</li>
+      </ul>
+
+      <h2>4. Intellectual Property</h2>
+      <p>The <code>share-env</code> CLI tool is open-source software licensed under the MIT License. The source code is available at <a href="https://github.com/arjunn881/env-share" target="_blank" rel="noopener noreferrer">github.com/arjunn881/env-share</a>.</p>
+      <p>The content on this Website, including text, graphics, and documentation, is protected by copyright. You may not reproduce, distribute, or create derivative works without permission.</p>
+
+      <h2>5. Disclaimer of Warranties</h2>
+      <p>THE WEBSITE AND TOOL ARE PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT.</p>
+      <p>We do not warrant that:</p>
+      <ul>
+        <li>The Tool will be error-free or uninterrupted</li>
+        <li>The relay server will be available at all times</li>
+        <li>The encryption implementation is free from vulnerabilities</li>
+        <li>The Website content is accurate, complete, or current</li>
+      </ul>
+
+      <h2>6. Limitation of Liability</h2>
+      <p>TO THE FULLEST EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THE WEBSITE OR TOOL, INCLUDING BUT NOT LIMITED TO LOSS OF DATA, LOSS OF PROFITS, OR SECURITY BREACHES RESULTING FROM YOUR USE OF THE TOOL.</p>
+
+      <h2>7. Security</h2>
+      <p>While the Tool uses strong encryption (AES-256-GCM), no security system is perfect. You are responsible for:</p>
+      <ul>
+        <li>Transmitting share codes through reasonably secure channels</li>
+        <li>Ensuring the recipient is who you intend</li>
+        <li>Verifying that your <code>.env</code> files do not contain information you are not authorized to share</li>
+      </ul>
+      <p>We are not responsible for any unauthorized access to secrets arising from user error, insecure share code transmission, or vulnerabilities in third-party systems.</p>
+
+      <h2>8. Third-Party Content</h2>
+      <p>This Website may contain links to third-party websites. These links are provided for convenience only. We have no control over the content of third-party sites and accept no responsibility for them.</p>
+
+      <h2>9. Advertisements</h2>
+      <p>This Website displays advertisements served by Google AdSense. These advertisements are governed by Google's advertising policies. We are not responsible for the content of advertisements displayed on this Website.</p>
+
+      <h2>10. Modifications</h2>
+      <p>We reserve the right to modify these Terms at any time. Changes will be effective when posted on the Website. Your continued use of the Website or Tool after changes are posted constitutes your acceptance of the revised Terms.</p>
+
+      <h2>11. Termination</h2>
+      <p>We reserve the right to terminate or restrict your access to the relay server at our discretion, without notice, for conduct that we believe violates these Terms or is harmful to other users, us, third parties, or the operation of the service.</p>
+
+      <h2>12. Governing Law</h2>
+      <p>These Terms shall be governed by and construed in accordance with applicable laws. Any disputes arising from these Terms shall be resolved through good-faith negotiation.</p>
+
+      <h2>13. Contact</h2>
+      <p>If you have questions about these Terms, please contact us through our <a href="/contact">Contact page</a>.</p>
+    </div>
+  </div>
+</Base>

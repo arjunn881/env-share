@@ -1,0 +1,201 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const securityFaq = [
+  { q: 'Does the relay server ever receive the encryption key?', a: 'No. The 256-bit AES-256-GCM encryption key is generated in local memory and is embedded in the share code that the sender transmits manually. The relay server receives only ciphertext, IV, and authentication tag — never the key.' },
+  { q: 'What happens if the relay server is breached?', a: 'An attacker who fully compromises the relay server obtains only AES-256-GCM ciphertext. Without the 256-bit key (which never touched the relay), the ciphertext is computationally indistinguishable from random noise and cannot be decrypted.' },
+  { q: 'Can a payload be pulled more than once?', a: 'No. The relay server permanently deletes the payload the moment it is pulled for the first time. A second pull attempt returns a 404 error. Nothing can be recovered after the first successful pull.' },
+];
+---
+
+<Base
+  title="Security Model — share-env AES-256-GCM Zero-Knowledge Encryption"
+  description="Technical security model for share-env: AES-256-GCM encryption flow, what the relay server receives, the threat model table, and security guarantees for .env file sharing."
+  keywords="share-env security, dotenv security, .env file encryption security, aes 256 gcm .env, zero knowledge relay security, secure .env sharing security model, dotenv security model, env file encryption how"
+  faqSchema={securityFaq}
+  pageType="TechArticle"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Security</span>
+      </nav>
+      <p class="sl">Security Model</p>
+      <h1>Zero-knowledge .env encryption.</h1>
+      <p class="desc">How share-env encrypts and transmits <strong>.env files</strong> without the relay server ever learning the decryption key — and what guarantees that provides.</p>
+    </div>
+
+    <!-- AEO: quick answer -->
+    <div class="answer-box rv" style="margin-bottom:52px;">
+      <div class="ab-q">Does the relay server ever see the decryption key?</div>
+      <div class="ab-a">Never. The 256-bit AES-256-GCM key is generated in local memory on the sender's machine and embedded in the share code that travels out-of-band (via Slack, Signal, etc.). The relay receives only ciphertext, IV, and auth tag. Even a fully compromised relay yields nothing without the key.</div>
+    </div>
+
+    <!-- Encryption flow -->
+    <section aria-labelledby="enc-flow">
+      <div class="sh">
+        <p class="sl rv">Encryption flow</p>
+        <h2 id="enc-flow" class="st rv d1">What happens locally during <code>push</code>.</h2>
+        <p class="ss rv d2">All of the following steps occur on the sender's machine before any network connection is made.</p>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0;" class="rv">
+        {[
+          { n:'1', title:'Generate random 256-bit key', detail:'crypto.randomBytes(32) generates 32 bytes (256 bits) of cryptographically secure randomness. This key never leaves the local process — it is embedded in the share code only.', code:'const key = crypto.randomBytes(32); // 256-bit AES key', col:'var(--accent)' },
+          { n:'2', title:'Generate random 96-bit IV', detail:'crypto.randomBytes(12) generates 12 bytes (96 bits) — the NIST-recommended IV size for GCM mode. A fresh IV is generated for every push, even with the same key.', code:'const iv = crypto.randomBytes(12);   // 96-bit GCM IV', col:'var(--accent-2)' },
+          { n:'3', title:'Encrypt with AES-256-GCM', detail:'The raw .env contents are encrypted. GCM mode produces both the ciphertext and a 128-bit authentication tag. The auth tag is used at decryption time to verify the ciphertext was not tampered with.', code:'const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);\nconst ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);\nconst authTag = cipher.getAuthTag(); // 128-bit auth tag', col:'var(--accent-3)' },
+          { n:'4', title:'Upload ciphertext only', detail:'The relay server receives the ciphertext + IV + authTag via POST. The key is never sent. The relay cannot decrypt anything it stores.', code:'// What goes to the relay:\nPOST /push { ciphertext, iv, authTag }\n// What NEVER goes to the relay:\n// { key }', col:'var(--ok)' },
+          { n:'5', title:'Build the share code', detail:'The relay returns a 3-word identifier (phrase). The CLI appends the 64-character hex key after a # separator to form the complete share code.', code:'const shareCode = `${phrase}#${key.toString("hex")}`;\n// e.g.: apple-brave-cloud#a3f9b2c1d4e5...', col:'var(--accent)' },
+        ].map((step, i) => (
+          <div style="display:flex;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;padding-right:20px;flex-shrink:0;">
+              <div style={`width:32px;height:32px;border-radius:50%;background:${step.col};color:var(--bg);font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;`}>{step.n}</div>
+              {i < 4 && <div style="width:2px;flex:1;background:linear-gradient(180deg,var(--border-m),var(--border));min-height:28px;margin-top:4px;"></div>}
+            </div>
+            <div style={`padding-bottom:${i < 4 ? '24px' : '0'};flex:1;`}>
+              <div style="font-weight:800;font-size:.97rem;margin-bottom:6px;">{step.title}</div>
+              <p style="font-size:.855rem;color:var(--text-muted);line-height:1.65;margin-bottom:10px;">{step.detail}</p>
+              <div class="cblock">
+                <div class="cblock-head"><span class="cblock-lang">node.js crypto</span></div>
+                <pre class="ccode">{step.code}</pre>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+
+    <!-- What relay receives -->
+    <section aria-labelledby="relay-recv">
+      <div class="sh">
+        <p class="sl rv">Relay server</p>
+        <h2 id="relay-recv" class="st rv d1">What the relay <span class="grad">does and doesn't</span> receive.</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;" class="relay-g">
+        <div style="border:1px solid rgba(0,255,157,.18);background:rgba(0,255,157,.025);border-radius:20px;padding:28px;" class="rv">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <strong style="font-size:.9rem;color:var(--ok);">Relay receives</strong>
+          </div>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:12px;">
+            {[
+              ['Ciphertext','Encrypted bytes. Unreadable without the key.'],
+              ['IV (nonce)','Required for decryption, but harmless without the key.'],
+              ['Auth tag','Used to verify integrity. Cannot be reversed to reveal plaintext.'],
+            ].map(([name, desc]) => (
+              <li style="display:flex;flex-direction:column;gap:3px;">
+                <code style="color:var(--accent);font-size:.8rem;">{name}</code>
+                <span style="font-size:.8rem;color:var(--text-muted);">{desc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div style="border:1px solid rgba(244,63,94,.18);background:rgba(244,63,94,.025);border-radius:20px;padding:28px;" class="rv d1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <strong style="font-size:.9rem;color:var(--danger);">Relay NEVER receives</strong>
+          </div>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:12px;">
+            {[
+              ['Encryption key','Stays in local memory and the share code only.'],
+              ['Plaintext .env contents','Never transmitted in cleartext at any point.'],
+              ['Key derivation material','No KDF, no passphrase — the full key is embedded in the share code.'],
+            ].map(([name, desc]) => (
+              <li style="display:flex;flex-direction:column;gap:3px;">
+                <code style="color:var(--danger);font-size:.8rem;">{name}</code>
+                <span style="font-size:.8rem;color:var(--text-muted);">{desc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Share code anatomy -->
+      <div style="margin-top:24px;background:var(--bg-card);border:1px solid var(--border-m);border-radius:var(--r-xl);padding:32px;backdrop-filter:blur(14px);" class="rv d2">
+        <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Share code anatomy</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.9rem;margin-bottom:18px;word-break:break-all;">
+          <span style="color:var(--accent-3);border-bottom:2px solid var(--accent-3);padding-bottom:2px;">apple-brave-cloud</span>
+          <span style="color:var(--text-dim);">#</span>
+          <span style="color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:2px;">a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:.84rem;">
+          <div>
+            <div style="color:var(--accent-3);font-weight:700;margin-bottom:4px;">Before the # — relay phrase</div>
+            <div style="color:var(--text-muted);line-height:1.6;">3-word identifier assigned by the relay server. Used to look up the encrypted payload. Does <strong>not</strong> reveal the key.</div>
+          </div>
+          <div>
+            <div style="color:var(--accent);font-weight:700;margin-bottom:4px;">After the # — the AES-256 key</div>
+            <div style="color:var(--text-muted);line-height:1.6;">64 hex characters = 256-bit AES key. Travels only in this share code. Never transmitted to the relay. Must be copied in full.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+
+    <!-- Threat model table -->
+    <section aria-labelledby="threat-model">
+      <div class="sh">
+        <p class="sl rv">Threat model</p>
+        <h2 id="threat-model" class="st rv d1">Known threats and mitigations.</h2>
+      </div>
+      <div style="overflow-x:auto;" class="rv">
+        <table style="width:100%;border-collapse:collapse;font-size:.855rem;" aria-label="Security threat model table">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border-m);">
+              <th style="text-align:left;padding:12px 16px;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Threat</th>
+              <th style="text-align:left;padding:12px 16px;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Mitigation</th>
+              <th style="text-align:left;padding:12px 16px;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ['Relay server is compromised', 'Attacker only obtains AES-256-GCM ciphertext. No key means no decryption — the ciphertext is computationally indistinguishable from random noise.', 'Fully mitigated'],
+              ['Share code intercepted in transit', 'The share code contains the decryption key — treat it like a password. Send it over an encrypted channel (Slack, Signal, Teams). Use Signal or E2EE channels for highest assurance.', 'User responsibility'],
+              ['Payload pulled by wrong person', 'The payload is deleted on first pull. If an attacker pulls first, the intended receiver gets a 404 error and should ask the sender to push again.', 'Burn-after-reading'],
+              ['Payload never pulled (abandoned)', 'The relay server automatically expires and permanently deletes all payloads after 10 minutes (600 seconds TTL), regardless of whether they were pulled.', 'Auto-expiry'],
+              ['Accidental git add .env', 'The git guardrail check blocks both push and pull from running if .gitignore does not explicitly ignore .env and .env.* files. This is mandatory and cannot be disabled.', 'Mandatory block'],
+              ['Ciphertext tampering in transit', 'AES-256-GCM produces a 128-bit authentication tag. Any bit-level modification to the ciphertext causes decryption to throw an error — tampered data is always rejected.', 'Auth tag verification'],
+              ['Malformed .env file', 'The push command validates all lines in the .env file before encrypting. Lines not matching KEY=VALUE format cause the tool to exit with an error before any upload.', 'Pre-upload validation'],
+            ].map(([threat, mitigation, status]) => (
+              <tr style="border-bottom:1px solid rgba(0,255,157,.04);">
+                <td style="padding:14px 16px;color:var(--text);font-weight:600;vertical-align:top;">{threat}</td>
+                <td style="padding:14px 16px;color:var(--text-muted);line-height:1.65;vertical-align:top;">{mitigation}</td>
+                <td style="padding:14px 16px;vertical-align:top;">
+                  <span class={`chip ${status.includes('mitigated') || status.includes('Auto') || status.includes('Mandatory') || status.includes('Auth') || status.includes('Pre') || status.includes('Burn') ? 'ok' : 'warn'}`}>{status}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FAQ / AEO -->
+    <section>
+      <div class="sh">
+        <p class="sl rv">Security Q&amp;A</p>
+        <h2 class="st rv d1">Common security questions.</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;" class="rv">
+        {securityFaq.map(f => (
+          <div class="answer-box">
+            <div class="ab-q">{f.q}</div>
+            <div class="ab-a">{f.a}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+  </div>
+
+  <style>
+    @media(max-width:640px){ .relay-g{ grid-template-columns:1fr !important; } }
+  </style>
+</Base>

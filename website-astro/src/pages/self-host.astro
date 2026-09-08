@@ -1,0 +1,229 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const RELAY = 'https://env-share-1rsi.onrender.com';
+const REPO = 'https://github.com/arjunn881/env-share';
+
+const serverConfig = [
+  { setting:'TTL_SECONDS', default:'600 (10 minutes)', desc:'Time before an uncollected payload is automatically deleted from memory' },
+  { setting:'RATE_LIMIT_MAX', default:'10', desc:'Maximum requests per minute per IP address' },
+  { setting:'PORT', default:'3000', desc:'Port the server listens on — overridden by the PORT environment variable' },
+];
+---
+
+<Base
+  title="Self-Hosting the share-env Relay Server | Node.js Setup Guide"
+  description="Complete guide to self-hosting the share-env relay server. Clone, build, and deploy your own zero-knowledge .env relay on Render, Railway, Fly.io, or any VPS."
+  keywords="share-env self host, share env relay server, host env relay, self host dotenv relay, share-env server setup, env relay server nodejs, share-env render deploy, share-env railway deploy, custom relay server share-env"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Self-hosting</span>
+      </nav>
+      <p class="sl">Self-hosting</p>
+      <h1>Run your own relay server.</h1>
+      <p class="desc">The share-env relay is open source and can be self-hosted on any platform that runs Node.js 18+. Full control over TTL, rate limits, and infrastructure.</p>
+    </div>
+
+    <!-- Why self-host -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:60px;" class="why-g">
+      {[
+        { icon:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', title:'Full infrastructure control', desc:'Your relay, your server, your rules. No shared default relay, no dependency on external uptime.', c:'var(--accent)' },
+        { icon:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', title:'Custom TTL and rate limits', desc:'Adjust the 10-minute TTL and 10 req/min rate limit to match your team\'s needs.', c:'var(--accent-2)' },
+        { icon:'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5', title:'Enterprise & compliance', desc:'Teams with strict data residency requirements can keep all env payloads within their own infrastructure.', c:'var(--accent-3)' },
+      ].map(f => (
+        <div class="grad-card rv hover-card" style="padding:24px;">
+          <div style={`width:36px;height:36px;border-radius:9px;background:rgba(0,255,157,.07);color:${f.c};display:flex;align-items:center;justify-content:center;margin-bottom:12px;`}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={f.icon}/></svg>
+          </div>
+          <div style="font-weight:700;font-size:.93rem;margin-bottom:6px;">{f.title}</div>
+          <div style="font-size:.845rem;color:var(--text-muted);line-height:1.6;">{f.desc}</div>
+        </div>
+      ))}
+    </div>
+
+    <AdSlot slot={undefined} />
+
+    <!-- Requirements -->
+    <section style="margin-bottom:52px;" aria-labelledby="req-h">
+      <h2 id="req-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:18px;">Requirements</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {[
+          ['Node.js 18 or higher','Check with: node --version'],
+          ['A server or cloud platform that runs a persistent Node.js process','Render (free tier), Railway, Fly.io, or a VPS all work.'],
+          ['Git (to clone the repository)','Only needed for setup.'],
+        ].map(([req, note]) => (
+          <div style="display:flex;gap:12px;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;backdrop-filter:blur(12px);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <div>
+              <span style="font-weight:600;font-size:.88rem;">{req}</span>
+              <span style="font-size:.8rem;color:var(--text-muted);margin-left:8px;">{note}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Setup steps -->
+    <section style="margin-bottom:52px;" aria-labelledby="setup-h">
+      <h2 id="setup-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:8px;">Setup</h2>
+      <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:24px;">Four steps — runs in under 2 minutes.</p>
+
+      <div style="display:flex;flex-direction:column;gap:0;">
+        {[
+          {
+            n:'1', title:'Clone the repository',
+            code:`git clone ${REPO}.git\ncd env-share`,
+            lang:'bash',
+          },
+          {
+            n:'2', title:'Install all dependencies',
+            code:'npm install',
+            lang:'bash',
+          },
+          {
+            n:'3', title:'Build the server workspace',
+            code:'npm run build',
+            lang:'bash',
+          },
+          {
+            n:'4', title:'Start the relay server',
+            code:'npm start --workspace=server\n\n# To use a custom port:\nPORT=8080 npm start --workspace=server',
+            lang:'bash',
+          },
+        ].map((step, i) => (
+          <div style="display:flex;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;padding-right:20px;flex-shrink:0;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);font-size:.78rem;font-weight:900;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;">{step.n}</div>
+              {i < 3 && <div style="width:2px;flex:1;background:linear-gradient(180deg,var(--border-m),var(--border));min-height:24px;margin-top:4px;"></div>}
+            </div>
+            <div style={`padding-bottom:${i < 3 ? '24px' : '0'};flex:1;`}>
+              <div style="font-weight:800;font-size:.97rem;margin-bottom:10px;">{step.title}</div>
+              <div class="cblock">
+                <div class="cblock-head">
+                  <span class="cblock-lang">{step.lang}</span>
+                  <button class="cbtn" onclick={`cb(this,${JSON.stringify(step.code)})`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+                  </button>
+                </div>
+                <pre class="ccode"><span class="cp">$</span> {step.code.replace(/\n/g, '\n')}</pre>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Using your relay -->
+    <section style="margin-bottom:52px;" aria-labelledby="using-h">
+      <h2 id="using-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:18px;">Using your self-hosted relay</h2>
+      <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:16px;">Pass the <code>--server</code> flag to both <code>push</code> and <code>pull</code>:</p>
+      <div class="cblock">
+        <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env push --server https://your-relay.example.com\nnpx share-env pull <share-code> --server https://your-relay.example.com')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+        <pre class="ccode"><span class="cm"># Sender</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">--server</span> https://your-relay.example.com
+
+<span class="cm"># Receiver</span>
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">&lt;share-code&gt;</span> <span class="ky">--server</span> https://your-relay.example.com</pre>
+      </div>
+    </section>
+
+    <!-- Server configuration table -->
+    <section style="margin-bottom:52px;" aria-labelledby="config-h">
+      <h2 id="config-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:18px;">Relay server configuration</h2>
+      <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:16px;">These defaults are defined in <code>server/src/index.ts</code> and can be changed when self-hosting:</p>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:.855rem;" aria-label="Relay server configuration options">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border-m);">
+              <th style="text-align:left;padding:10px 16px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Setting</th>
+              <th style="text-align:left;padding:10px 16px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Default</th>
+              <th style="text-align:left;padding:10px 16px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {serverConfig.map(row => (
+              <tr style="border-bottom:1px solid rgba(0,255,157,.04);">
+                <td style="padding:12px 16px;"><code style="color:var(--accent-2);">{row.setting}</code></td>
+                <td style="padding:12px 16px;"><code style="color:var(--accent);">{row.default}</code></td>
+                <td style="padding:12px 16px;color:var(--text-muted);">{row.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="cblock">
+          <div class="cblock-head"><span class="cblock-lang">typescript — server/src/index.ts</span></div>
+          <pre class="ccode"><span class="cm">// Adjust these values in your self-hosted relay</span>
+<span class="ky">const</span> <span class="cn">TTL_SECONDS</span> = <span class="st-syn">600</span>;       <span class="cm">// 10 minutes</span>
+<span class="ky">const</span> <span class="cn">RATE_LIMIT_MAX</span> = <span class="st-syn">10</span>;    <span class="cm">// requests per minute per IP</span>
+<span class="ky">const</span> <span class="cn">PORT</span> = process.env.PORT || <span class="st-syn">3000</span>;</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deploy platforms -->
+    <section style="margin-bottom:52px;" aria-labelledby="deploy-h">
+      <h2 id="deploy-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:18px;">Recommended deploy platforms</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="deploy-g">
+        {[
+          { name:'Render', badge:'Free tier', desc:'Push the repo to GitHub, connect to Render, set build command to npm run build and start command to npm start --workspace=server.', url:'https://render.com', c:'var(--ok)' },
+          { name:'Railway', badge:'Free tier', desc:'Connect GitHub repo, Railway auto-detects Node.js. Set the start command and PORT environment variable.', url:'https://railway.app', c:'var(--accent-3)' },
+          { name:'Fly.io', badge:'Free tier', desc:'Use fly launch and fly deploy. The server runs as an always-on Fly Machine. Supports custom domains.', url:'https://fly.io', c:'var(--accent-2)' },
+          { name:'VPS (any cloud)', badge:'Self-managed', desc:'SSH into your server, clone the repo, run npm install && npm run build, then use PM2 to keep the process alive.', url:'#', c:'var(--warn)' },
+        ].map(p => (
+          <div class="glass-card rv" style="padding:22px 20px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+              <span style="font-weight:800;font-size:.97rem;">{p.name}</span>
+              <span class="chip ok" style={`background:rgba(0,255,157,0.08);color:${p.c};border-color:${p.c}33;`}>{p.badge}</span>
+            </div>
+            <p style="font-size:.845rem;color:var(--text-muted);line-height:1.62;margin-bottom:12px;">{p.desc}</p>
+            {p.url !== '#' && (
+              <a href={p.url} target="_blank" rel="noopener noreferrer" style={`font-size:.78rem;font-weight:700;color:${p.c};`}>{p.url.replace('https://','')} &rarr;</a>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Project structure -->
+    <section style="margin-bottom:52px;" aria-labelledby="struct-h">
+      <h2 id="struct-h" style="font-size:1.3rem;font-weight:800;letter-spacing:-.6px;margin-bottom:18px;">Project structure</h2>
+      <div class="cblock">
+        <div class="cblock-head"><span class="cblock-lang">repository structure</span></div>
+        <pre class="ccode">env-share/
+  <span class="ky">cli/</span>          <span class="cm">— The npm CLI package (share-env)</span>
+    src/
+      <span class="cn">index.ts</span>            <span class="cm">— CLI entry point and command definitions</span>
+      utils/
+        <span class="cn">crypto.ts</span>         <span class="cm">— AES-256-GCM encrypt/decrypt logic</span>
+        <span class="cn">env.ts</span>            <span class="cm">— Smart merge logic</span>
+        <span class="cn">env-validator.ts</span>  <span class="cm">— .env file format validation</span>
+        <span class="cn">git.ts</span>            <span class="cm">— .gitignore safety check</span>
+  <span class="ky">server/</span>       <span class="cm">— The Express relay server</span>
+    src/
+      <span class="cn">index.ts</span>            <span class="cm">— Server entry point, routes, rate limiting</span></pre>
+      </div>
+    </section>
+
+    <div class="rv">
+      <div class="info-box tip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>The default relay server <code>{RELAY}</code> is provided free of charge on Render's free tier. It may experience cold-start latency (15–30s on first request after inactivity). Self-hosting avoids this.</span>
+      </div>
+    </div>
+
+    <AdSlot slot={undefined} />
+  </div>
+
+  <style>
+    @media(max-width:640px){
+      .why-g,.deploy-g{ grid-template-columns:1fr !important; }
+    }
+  </style>
+</Base>

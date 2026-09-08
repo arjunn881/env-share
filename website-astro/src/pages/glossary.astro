@@ -1,0 +1,108 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const terms = [
+  {
+    word: '.env',
+    also: 'Also known as: dotenv file, dot env file, environment file, env file',
+    definition: 'A hidden configuration file (the filename starts with a dot, making it hidden on Unix systems) that stores environment variables as key=value pairs. It is read by applications at startup to configure API keys, database URLs, secrets, and settings without hardcoding them into source code. The file should always be in .gitignore to prevent secrets from entering version control.',
+    schema: { name: '.env file', description: 'A hidden configuration file storing environment variables as key=value pairs for application configuration without hardcoding secrets into source code.' },
+    example: 'DATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=sk_live_abc123\nNODE_ENV=production',
+  },
+  {
+    word: 'dotenv',
+    also: 'Also known as: dot env, .env convention, dotenv npm',
+    definition: 'Dotenv refers to both the convention of storing environment variables in .env files and the npm package that loads them into process.env in Node.js applications. The dotenv package (npm install dotenv) has hundreds of millions of downloads and is the standard way to load .env files in JavaScript/TypeScript applications. The term is often used interchangeably with ".env file".',
+    schema: { name: 'dotenv', description: 'The convention and npm package for storing and loading environment variables from .env files into application processes.' },
+    example: '// Node.js usage\nrequire("dotenv").config();\nconsole.log(process.env.DATABASE_URL);',
+  },
+  {
+    word: 'AES-256-GCM',
+    also: 'Also known as: AES256GCM, Advanced Encryption Standard 256-bit Galois/Counter Mode',
+    definition: 'AES-256-GCM is a symmetric authenticated encryption algorithm. AES is the encryption cipher (Advanced Encryption Standard), 256 refers to the key size in bits (32 bytes), and GCM (Galois/Counter Mode) is the mode that provides both confidentiality and a 128-bit authentication tag. This means any tampering with the ciphertext is detectable and rejected. It is the encryption algorithm used by share-env.',
+    schema: { name: 'AES-256-GCM', description: 'Advanced Encryption Standard with 256-bit key in Galois/Counter Mode — an authenticated symmetric encryption algorithm providing confidentiality and tamper detection.' },
+    example: '// Node.js AES-256-GCM\nconst key = crypto.randomBytes(32); // 256 bits\nconst iv  = crypto.randomBytes(12); // 96 bits GCM\nconst cipher = crypto.createCipheriv("aes-256-gcm", key, iv);',
+  },
+  {
+    word: 'Zero-knowledge relay',
+    also: 'Also known as: blind relay, zero-knowledge server, ZK relay',
+    definition: 'A zero-knowledge relay server is a server that stores or transports data without being able to decrypt or understand it. In the context of share-env, the relay server stores only AES-256-GCM ciphertext. The decryption key never passes through the relay — it travels exclusively in the share code the user sends manually. Even if the relay server is fully compromised, an attacker obtains only unreadable ciphertext.',
+    schema: { name: 'zero-knowledge relay', description: 'A relay server that stores or transmits only encrypted ciphertext and has no access to decryption keys, making it architecturally unable to read the data it handles.' },
+    example: '# What the relay receives (only):\n{ ciphertext, iv, authTag }\n\n# What it never receives:\n{ key }  ← stays in share code',
+  },
+  {
+    word: 'Burn-after-reading',
+    also: 'Also known as: one-time access, ephemeral secret, self-destructing message',
+    definition: 'Burn-after-reading is a security pattern where a secret or piece of data is permanently and irrevocably deleted the moment it is accessed for the first time. In share-env, the encrypted .env payload is deleted from the relay server the instant it is pulled. If anyone attempts to retrieve the same share code a second time, they receive a 404 error. Nothing can be recovered after the first pull.',
+    schema: { name: 'burn-after-reading', description: 'A security pattern where data is permanently deleted immediately upon first access, preventing any subsequent retrieval by any party.' },
+    example: '# Attempt to pull the same code twice:\n$ npx share-env pull apple-brave-cloud#...\n  Done! .env written.\n\n$ npx share-env pull apple-brave-cloud#...\n  Error: phrase not found (404)',
+  },
+  {
+    word: 'Share code',
+    also: 'Also known as: share link, env share code, relay code',
+    definition: 'In share-env, a share code is the one-time identifier returned after a push operation. It has the format phrase#hexKey, where the 3-word phrase (e.g. apple-brave-cloud) is the relay lookup identifier and the 64-character hex string after # is the AES-256-GCM decryption key. Both components together are required to retrieve and decrypt the payload. The key portion never passes through the relay server.',
+    schema: { name: 'share code (share-env)', description: 'A one-time code in the format phrase#hexKey that combines a relay lookup identifier with an embedded AES-256-GCM decryption key.' },
+    example: '# Example share code format:\napple-brave-cloud#a3f9b2c1d4e5f6a7b8c9...\n#                 ^--- 64-char hex AES key',
+  },
+  {
+    word: 'Environment variable',
+    also: 'Also known as: env var, environment config, process environment',
+    definition: 'An environment variable is a named value accessible to running processes via their environment. In application development, environment variables are used to configure applications without hardcoding values into source code. Common examples include DATABASE_URL, API_KEY, NODE_ENV, PORT, and JWT_SECRET. They are set differently per environment (local development, staging, production) and should never be committed to version control.',
+    schema: { name: 'environment variable', description: 'A named configuration value accessible to application processes, used to store secrets and settings that differ between environments without hardcoding them into source code.' },
+    example: 'DATABASE_URL=postgres://user:pass@host:5432/db\nAPI_KEY=sk_live_xxxxxxxxxxxxx\nNODE_ENV=production\nPORT=3000',
+  },
+];
+---
+
+<Base
+  title="Glossary — .env, dotenv, AES-256-GCM, Zero-Knowledge, Burn-After-Reading Definitions"
+  description="Developer glossary for .env file sharing terminology: definitions for dotenv, .env, AES-256-GCM, zero-knowledge relay, burn-after-reading, share code, and environment variables."
+  keywords="dotenv definition, .env file meaning, what is dotenv, what is aes-256-gcm, zero knowledge relay definition, burn after reading definition, share code definition, environment variable definition, .env glossary, dotenv glossary"
+  pageType="CollectionPage"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Glossary</span>
+      </nav>
+      <p class="sl">Glossary</p>
+      <h1>Definitions for .env file sharing terminology.</h1>
+      <p class="desc">Authoritative definitions for the key terms used in secure <strong>dotenv</strong> and <strong>.env file sharing</strong> — written for developers.</p>
+    </div>
+
+    <!-- Term index -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:56px;" class="rv" aria-label="Jump to term">
+      {terms.map(t => (
+        <a href={`#${t.word.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} class="kw-pill" style="font-size:.8rem;">{t.word}</a>
+      ))}
+    </div>
+
+    <!-- Glossary entries -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      {terms.map((t, i) => (
+        <article
+          id={t.word.toLowerCase().replace(/[^a-z0-9]+/g, '-')}
+          class="glossary-term rv"
+          itemscope
+          itemtype="https://schema.org/DefinedTerm"
+        >
+          <div class="gt-word" itemprop="name">{t.word}</div>
+          <div class="gt-also">{t.also}</div>
+          <p class="gt-def" itemprop="description">{t.definition}</p>
+          <div class="cblock" style="margin-top:16px;">
+            <div class="cblock-head"><span class="cblock-lang">example</span></div>
+            <pre class="ccode">{t.example}</pre>
+          </div>
+          {i === 2 && <AdSlot slot={undefined} />}
+        </article>
+      ))}
+    </div>
+
+    <div style="margin-top:48px;">
+      <AdSlot slot={undefined} />
+    </div>
+  </div>
+</Base>

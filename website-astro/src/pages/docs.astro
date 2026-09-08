@@ -1,0 +1,417 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const RELAY = 'https://env-share-1rsi.onrender.com';
+---
+
+<Base
+  title="CLI Reference — share-env push & pull | .env File Sharing Docs"
+  description="Complete CLI documentation for share-env. Learn how to use npx share-env push and pull to securely share .env files. All flags, options, and workflow steps."
+  keywords="share-env push, share-env pull, npx share-env, share-env cli reference, share env command, dotenv sharing cli, share .env command line, share-env --file, share-env --server, env share cli docs"
+  pageType="TechArticle"
+>
+  <div class="container" style="max-width:1200px;">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Docs</span>
+      </nav>
+      <p class="sl">CLI Reference</p>
+      <h1>share-env Documentation</h1>
+      <p class="desc">Complete reference for <strong>npx share-env push</strong> and <strong>npx share-env pull</strong> — the secure way to share <strong>.env files</strong> and <strong>dotenv files</strong> between developers.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start;" class="docs-layout">
+
+      <!-- Sidebar -->
+      <nav style="position:sticky;top:80px;" aria-label="Documentation sections">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 16px;backdrop-filter:blur(14px);">
+          <div class="flg-title" style="margin-bottom:12px;">On this page</div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            {[
+              ['#overview','Overview'],
+              ['#prerequisites','Prerequisites'],
+              ['#quickstart','Quick Start'],
+              ['#push','push command'],
+              ['#pull','pull command'],
+              ['#workflow','Step-by-step workflow'],
+              ['#merge','Smart merge'],
+              ['#custom-file','Custom file paths'],
+              ['#self-host-quick','Self-host relay'],
+            ].map(([href, label]) => (
+              <a href={href} class="doc-link">{label}</a>
+            ))}
+          </div>
+        </div>
+        <div style="margin-top:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;backdrop-filter:blur(12px);">
+          <div style="font-size:.7rem;font-weight:700;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">More</div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <a href="/security" class="doc-link">Security model</a>
+            <a href="/errors" class="doc-link">Error reference</a>
+            <a href="/self-host" class="doc-link">Self-hosting</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Main content -->
+      <main id="docs-content">
+
+        <!-- Overview -->
+        <section id="overview" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+            <span style="width:32px;height:32px;border-radius:8px;background:rgba(0,255,157,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </span>
+            Overview
+          </h2>
+          <p style="font-size:.93rem;color:var(--text-muted);line-height:1.77;margin-bottom:14px;">
+            <strong>share-env</strong> (<code>env-share</code>) eliminates the insecure practice of sharing <strong>.env files</strong> over Slack, Discord, email, or any messaging platform. It encrypts your environment variables <em>on your local machine</em> before they leave your computer, uploads only the ciphertext to a temporary zero-knowledge relay server, and gives you a one-time share code to pass to your teammate.
+          </p>
+          <p style="font-size:.93rem;color:var(--text-muted);line-height:1.77;margin-bottom:14px;">
+            The relay server permanently deletes the payload the moment it is pulled. <strong>The relay never receives the decryption key</strong> — it only ever stores unreadable ciphertext.
+          </p>
+          <div class="info-box tip" style="margin-top:16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Default relay server: <code>{RELAY}</code> — runs on Render. You can <a href="/self-host">self-host your own relay</a>.</span>
+          </div>
+        </section>
+
+        <!-- Prerequisites -->
+        <section id="prerequisites" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:18px;">Prerequisites</h2>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            {[
+              { icon:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', label:'Node.js 18 or higher', desc:'Required by both the CLI and the relay server. Check: node --version' },
+              { icon:'M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77A5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22', label:'A .gitignore that ignores .env', desc:'Required. The tool refuses to run if .gitignore does not contain .env and .env.* rules.' },
+              { icon:'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z', label:'A .env file to share (sender only)', desc:'The receiver does not need one — it will be created or merged upon pull.' },
+            ].map(p => (
+              <div style="display:flex;gap:14px;align-items:flex-start;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;backdrop-filter:blur(12px);">
+                <div style="width:34px;height:34px;border-radius:9px;background:rgba(0,255,157,.08);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={p.icon}/></svg>
+                </div>
+                <div>
+                  <div style="font-weight:700;font-size:.88rem;margin-bottom:4px;">{p.label}</div>
+                  <div style="font-size:.82rem;color:var(--text-muted);">{p.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style="margin-top:16px;">
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">gitignore — required</span><button class="cbtn" onclick="cb(this,'.env\n.env.*')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+              <pre class="ccode"><span class="cm"># Add to your .gitignore before running share-env</span>
+<span class="cn">.env</span>
+<span class="cn">.env.*</span></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Start -->
+        <section id="quickstart" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:18px;">Quick Start</h2>
+          <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:18px;">No installation required. Run directly with <code>npx</code>.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent);margin-bottom:8px;">Sender (Developer A)</div>
+              <div class="cblock">
+                <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env push')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+                <pre class="ccode"><span class="cp">$</span> <span class="cn">npx share-env push</span></pre>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent-2);margin-bottom:8px;">Receiver (Developer B)</div>
+              <div class="cblock">
+                <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env pull <share-code>')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+                <pre class="ccode"><span class="cp">$</span> <span class="cn">npx share-env pull</span> <span class="st-syn">&lt;share-code&gt;</span></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <AdSlot slot={undefined} />
+
+        <!-- push -->
+        <section id="push" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">push</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:18px;">Encrypt and upload the local <code>.env</code> file to the relay server. Returns a one-time share code.</p>
+          <div class="cblock" style="margin-bottom:20px;">
+            <div class="cblock-head"><span class="cblock-lang">syntax</span></div>
+            <pre class="ccode"><span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">[options]</span></pre>
+          </div>
+
+          <!-- Options table -->
+          <div style="overflow-x:auto;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;font-size:.84rem;" aria-label="push command options">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border-m);">
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Option</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Type</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Default</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(0,255,157,.04);">
+                  <td style="padding:12px 14px;"><code style="color:var(--accent-2);">-f, --file &lt;path&gt;</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">string</td>
+                  <td style="padding:12px 14px;"><code>.env</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">Path to the .env file to share</td>
+                </tr>
+                <tr style="border-bottom:1px solid rgba(0,255,157,.04);">
+                  <td style="padding:12px 14px;"><code style="color:var(--accent-2);">--server &lt;url&gt;</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">string</td>
+                  <td style="padding:12px 14px;"><code style="font-size:.72rem;">{RELAY}</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">Relay server base URL</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash — push examples</span><button class="cbtn" onclick="cb(this,'npx share-env push\nnpx share-env push --file ./config/.env.production\nnpx share-env push --server https://your-relay.example.com')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <pre class="ccode"><span class="cm"># Share the default .env in the current directory</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span>
+
+<span class="cm"># Share a file at a custom path</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">--file</span> ./config/.env.production
+
+<span class="cm"># Use a custom self-hosted relay server</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">--server</span> https://your-relay.example.com</pre>
+          </div>
+
+          <!-- Expected output -->
+          <div style="margin-top:18px;">
+            <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Expected output</div>
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">terminal output</span></div>
+              <pre class="ccode">  <span style="color:var(--ok);">3 key(s) loaded from .env</span>
+
+  Encrypted payload stored on relay.
+
+  Payload uploaded. Your share code:
+
+  <span style="color:rgba(0,255,157,.3);">+--------------------------------------------------+</span>
+  <span style="color:rgba(0,255,157,.3);">|</span>  <span style="color:var(--accent);">apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2...</span>  <span style="color:rgba(0,255,157,.3);">|</span>
+  <span style="color:rgba(0,255,157,.3);">+--------------------------------------------------+</span>
+
+  <span style="color:var(--warn);">Send the code above to your teammate. It expires in 10 minutes.</span>
+  <span style="color:var(--warn);">One-time use — it is deleted from the relay after the first pull.</span></pre>
+            </div>
+          </div>
+        </section>
+
+        <!-- pull -->
+        <section id="pull" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">pull</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:18px;">Download, decrypt, and merge a shared <code>.env</code> file from the relay server.</p>
+          <div class="cblock" style="margin-bottom:20px;">
+            <div class="cblock-head"><span class="cblock-lang">syntax</span></div>
+            <pre class="ccode"><span class="cp">$</span> <span class="cn">npx share-env pull</span> <span class="st-syn">&lt;share-code&gt;</span> <span class="ky">[options]</span></pre>
+          </div>
+
+          <!-- Arguments table -->
+          <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Arguments</div>
+          <div style="overflow-x:auto;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;font-size:.84rem;" aria-label="pull command arguments">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border-m);">
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Argument</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Required</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding:12px 14px;"><code style="color:var(--accent-2);">share-code</code></td>
+                  <td style="padding:12px 14px;"><span class="chip ok">Yes</span></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">Full share code from the sender — format: <code>phrase#hexKey</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Options table -->
+          <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;">Options</div>
+          <div style="overflow-x:auto;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;font-size:.84rem;" aria-label="pull command options">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border-m);">
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Option</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Type</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Default</th>
+                  <th style="text-align:left;padding:10px 14px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid rgba(0,255,157,.04);">
+                  <td style="padding:12px 14px;"><code style="color:var(--accent-2);">-f, --file &lt;path&gt;</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">string</td>
+                  <td style="padding:12px 14px;"><code>.env</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">Target path to write the decrypted .env</td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 14px;"><code style="color:var(--accent-2);">--server &lt;url&gt;</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">string</td>
+                  <td style="padding:12px 14px;"><code style="font-size:.72rem;">{RELAY}</code></td>
+                  <td style="padding:12px 14px;color:var(--text-muted);">Relay server base URL</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash — pull examples</span><button class="cbtn" onclick="cb(this,'npx share-env pull apple-brave-cloud#a3f9b2c1...\nnpx share-env pull apple-brave-cloud#a3f9b2c1... --file ./config/.env.local\nnpx share-env pull apple-brave-cloud#a3f9b2c1... --server https://your-relay.example.com')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <pre class="ccode"><span class="cm"># Pull into the default .env in the current directory</span>
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">apple-brave-cloud#a3f9b2c1...</span>
+
+<span class="cm"># Pull into a custom file path</span>
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">apple-brave-cloud#a3f9b2c1...</span> <span class="ky">--file</span> ./config/.env.local
+
+<span class="cm"># Pull using a custom relay server</span>
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">apple-brave-cloud#a3f9b2c1...</span> <span class="ky">--server</span> https://your-relay.example.com</pre>
+          </div>
+        </section>
+
+        <AdSlot slot={undefined} />
+
+        <!-- Step-by-step workflow -->
+        <section id="workflow" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">Step-by-step workflow</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:24px;">Complete walkthrough for two developers sharing a <code>.env</code> file.</p>
+
+          <div style="display:flex;flex-direction:column;gap:0;">
+            {[
+              {
+                n:'1',
+                who:'Developer B',
+                title:'Confirm .gitignore is set up',
+                desc:'Before anything else, Developer B verifies their local .gitignore contains the required rules. The tool refuses to run on either side if these are missing.',
+                code:`.env\n.env.*`,
+                lang:'gitignore',
+              },
+              {
+                n:'2',
+                who:'Developer A',
+                title:'Navigate to the project root',
+                desc:'Developer A opens a terminal and changes to the root of the project where the .env file is located.',
+                code:`$ cd /path/to/your/project`,
+                lang:'bash',
+              },
+              {
+                n:'3',
+                who:'Developer A',
+                title:'Run the push command',
+                desc:'The tool validates .gitignore, reads .env, generates a 256-bit AES key locally, encrypts the file, uploads only ciphertext to the relay, and returns a share code.',
+                code:`$ npx share-env push`,
+                lang:'bash',
+              },
+              {
+                n:'4',
+                who:'Developer A',
+                title:'Send the share code to Developer B',
+                desc:'Copy the full share code and send via Slack, Signal, Teams, or any channel. The code is safe to send — the relay only ever saw the identifier portion, not the key after #.',
+                code:`apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7...`,
+                lang:'share code',
+              },
+              {
+                n:'5',
+                who:'Developer B',
+                title:'Navigate to the project root',
+                code:`$ cd /path/to/your/project`,
+                lang:'bash',
+                desc:'',
+              },
+              {
+                n:'6',
+                who:'Developer B',
+                title:'Run the pull command',
+                desc:'The tool validates .gitignore, fetches the encrypted payload, the relay immediately deletes it, decrypts locally, and writes or merges the .env file.',
+                code:`$ npx share-env pull apple-brave-cloud#a3f9b2c1...`,
+                lang:'bash',
+              },
+            ].map((step, i) => (
+              <div style={`display:flex;gap:0;${i < 5 ? '' : ''}`}>
+                <div style="display:flex;flex-direction:column;align-items:center;padding-right:20px;">
+                  <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--bg);font-size:.78rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'JetBrains Mono',monospace;">{step.n}</div>
+                  {i < 5 && <div style="width:2px;flex:1;background:linear-gradient(180deg,var(--border-m),var(--border));min-height:24px;margin-top:4px;"></div>}
+                </div>
+                <div style={`padding-bottom:${i < 5 ? '28px' : '0'};flex:1;`}>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+                    <span style="font-weight:800;font-size:.97rem;">{step.title}</span>
+                    <span style="font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:100px;background:rgba(0,255,157,.08);color:var(--accent);border:1px solid rgba(0,255,157,.15);">{step.who}</span>
+                  </div>
+                  {step.desc && <p style="font-size:.855rem;color:var(--text-muted);line-height:1.65;margin-bottom:12px;">{step.desc}</p>}
+                  <div class="cblock">
+                    <div class="cblock-head"><span class="cblock-lang">{step.lang}</span></div>
+                    <pre class="ccode">{step.code}</pre>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <!-- Smart merge -->
+        <section id="merge" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">Smart merge</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">If Developer B already has a local <code>.env</code> file, share-env does <strong>not</strong> overwrite it blindly. It compares each key interactively and asks for resolution on every conflict.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">terminal — merge conflict resolution</span></div>
+            <pre class="ccode">  <span style="color:var(--text-dim);">Existing .env found — starting merge...</span>
+
+  <span style="color:var(--warn);">Conflict: DATABASE_URL</span>
+    Local  : postgres://localhost:5432/mydb
+    Remote : postgres://prod-host:5432/mydb
+  ? Which value do you want to keep?
+    <span style="color:var(--accent);">&gt; Keep local</span>
+      Use remote
+
+  <span style="color:var(--ok);">Done!  .env written to: /path/to/your/project/.env</span></pre>
+          </div>
+        </section>
+
+        <!-- Custom file paths -->
+        <section id="custom-file" style="margin-bottom:56px;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">Custom file paths</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">Use <code>--file</code> (or <code>-f</code>) on both sides to work with staging, production, or any custom-named env file.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env push --file .env.staging\nnpx share-env pull <code> --file .env.staging')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <pre class="ccode"><span class="cm"># Sender — share a staging env file</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">--file</span> .env.staging
+
+<span class="cm"># Receiver — write to the same path</span>
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">&lt;code&gt;</span> <span class="ky">--file</span> .env.staging</pre>
+          </div>
+        </section>
+
+        <!-- Self-host quick -->
+        <section id="self-host-quick" style="margin-bottom:0;">
+          <h2 style="font-size:1.4rem;font-weight:800;letter-spacing:-.7px;margin-bottom:8px;">Self-hosting the relay</h2>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:16px;">Run your own relay for full infrastructure control. See the <a href="/self-host" style="color:var(--accent);">self-hosting guide</a> for the complete setup. The short version:</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash — quick setup</span></div>
+            <pre class="ccode"><span class="cp">$</span> git clone https://github.com/arjunn881/env-share.git
+<span class="cp">$</span> cd env-share
+<span class="cp">$</span> npm install
+<span class="cp">$</span> npm run build
+<span class="cp">$</span> npm start --workspace=server
+
+<span class="cm"># Use your relay:</span>
+<span class="cp">$</span> <span class="cn">npx share-env push</span> <span class="ky">--server</span> https://your-relay.example.com
+<span class="cp">$</span> <span class="cn">npx share-env pull</span> <span style="color:var(--accent);">&lt;code&gt;</span> <span class="ky">--server</span> https://your-relay.example.com</pre>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <style>
+    @media(max-width:860px){
+      .docs-layout { grid-template-columns: 1fr !important; }
+      nav[aria-label="Documentation sections"] { position: static !important; }
+    }
+  </style>
+</Base>

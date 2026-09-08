@@ -1,0 +1,167 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const errors = [
+  {
+    code: 'FATAL: Your .gitignore does not ignore .env files',
+    badge: 'fatal',
+    trigger: 'Runs on both push and pull. Your project\'s .gitignore file either does not exist or does not contain rules to ignore .env and .env.* files.',
+    causes: [
+      '.gitignore file does not exist in the project root',
+      '.gitignore exists but does not contain .env as a rule',
+      'The .gitignore is in a parent directory but not in the project root where you are running the command',
+    ],
+    fix: 'Add the following lines to your .gitignore in the project root and re-run:',
+    fixCode: '.env\n.env.*',
+    fixLang: 'gitignore',
+  },
+  {
+    code: 'FATAL: Your .env file contains malformed lines',
+    badge: 'fatal',
+    trigger: 'Runs on push only. One or more lines in your .env file do not follow the required KEY=VALUE format.',
+    causes: [
+      'A line has no = separator (e.g., just a key name with no value)',
+      'A line starts with whitespace before the key name',
+      'A line contains an invalid character in the key name',
+    ],
+    fix: 'Open your .env file and ensure every non-empty, non-comment line follows KEY=VALUE format. Comments (starting with #) and blank lines are allowed.',
+    fixCode: '# Valid .env format:\nDATABASE_URL=postgres://localhost:5432/mydb\nAPI_KEY=your_api_key_here\nDEBUG=true\n\n# Comments are fine\n# Blank lines are fine\n\n# INVALID — will cause this error:\nMY_KEY_WITHOUT_VALUE\n   LEADING_WHITESPACE=bad',
+    fixLang: 'dotenv',
+  },
+  {
+    code: 'NOT FOUND: The phrase was not found on the relay server',
+    badge: 'not-found',
+    trigger: 'Runs on pull only. The relay identifier in your share code does not match any active payload on the relay server.',
+    causes: [
+      'The payload was already pulled by someone else (burn-after-reading — it is gone)',
+      'The 10-minute TTL expired before you ran pull',
+      'The share code was copied incorrectly or truncated',
+      'The wrong relay --server URL was used (if self-hosting)',
+    ],
+    fix: 'Ask the sender to run push again and generate a fresh share code. Do not attempt to pull the same code twice.',
+    fixCode: '# Sender runs again:\n$ npx share-env push\n\n# New code generated — share the fresh one:\napple-brave-cloud#<new-64-char-key>',
+    fixLang: 'bash',
+  },
+  {
+    code: 'DECRYPTION FAILED',
+    badge: 'fatal',
+    trigger: 'Runs on pull only. The AES-256-GCM authentication tag verification failed during decryption.',
+    causes: [
+      'The share code was truncated — the hex key after # must be exactly 64 characters',
+      'The share code was modified or corrupted in transit',
+      'Extra characters were added (e.g., trailing newline or space)',
+    ],
+    fix: 'Ask the sender to push again and share the complete, unmodified share code. Verify the key portion (after #) is exactly 64 hex characters.',
+    fixCode: '# Verify the key portion length:\n# apple-brave-cloud#<---- must be exactly 64 hex chars ---->\n# a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1\n#                   |<--- count: 64 characters total --->|',
+    fixLang: 'bash',
+  },
+  {
+    code: 'RATE LIMIT: Too many requests',
+    badge: 'rate',
+    trigger: 'The default relay server enforces a rate limit of 10 requests per minute per IP address.',
+    causes: [
+      'Running push or pull too frequently in a short time window',
+      'Multiple team members pushing from the same network IP',
+    ],
+    fix: 'Wait 60 seconds and try again, or self-host your own relay server with a higher or no rate limit.',
+    fixCode: '# Increase rate limit on self-hosted relay:\n# In server/src/index.ts:\nconst RATE_LIMIT_MAX = 50; // default is 10\n\n# Or self-host to bypass shared limit entirely:\n$ npx share-env push --server https://your-relay.example.com',
+    fixLang: 'typescript',
+  },
+];
+---
+
+<Base
+  title="Error Reference — share-env CLI Error Messages and Fixes"
+  description="Complete error reference for share-env. Causes and fixes for all CLI errors: FATAL gitignore, malformed .env, NOT FOUND, DECRYPTION FAILED, and rate limit errors."
+  keywords="share-env error, share-env fatal gitignore, npx share-env not found, share-env decryption failed, share env error fix, dotenv sharing error, share-env troubleshooting"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">Errors</span>
+      </nav>
+      <p class="sl">Error Reference</p>
+      <h1>CLI Error Messages &amp; Fixes</h1>
+      <p class="desc">Every error share-env can produce, with exact causes and verified fixes from the <a href="/docs">official documentation</a>.</p>
+    </div>
+
+    <!-- Quick nav -->
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:48px;" class="rv">
+      {errors.map(e => (
+        <a href={`#${e.code.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}`} class="kw-pill" style="font-size:.78rem;">{e.code.split(':')[0]}</a>
+      ))}
+    </div>
+
+    <AdSlot slot={undefined} />
+
+    <!-- Error accordion list -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      {errors.map((err, i) => (
+        <article
+          id={err.code.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}
+          class={`acc-item${i === 0 ? ' open' : ''}`}
+          itemscope
+          itemtype="https://schema.org/HowToStep"
+        >
+          <div class="acc-head" onclick="toggleAcc(this)" role="button" aria-expanded={i === 0 ? 'true' : 'false'}>
+            <div style="display:flex;align-items:flex-start;gap:12px;flex:1;flex-wrap:wrap;">
+              <span class={`err-badge ${err.badge}`}>{err.badge.replace('-',' ').toUpperCase()}</span>
+              <span class="err-title" itemprop="name">{err.code}</span>
+            </div>
+            <span class="acc-chev">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </span>
+          </div>
+          <div class="acc-body" itemprop="text">
+            <div style="display:flex;flex-direction:column;gap:18px;">
+              <!-- When it occurs -->
+              <div>
+                <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">When it occurs</div>
+                <p style="font-size:.88rem;color:var(--text-muted);line-height:1.65;">{err.trigger}</p>
+              </div>
+              <!-- Causes -->
+              <div>
+                <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">Possible causes</div>
+                <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
+                  {err.causes.map(c => (
+                    <li style="font-size:.875rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;line-height:1.5;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <!-- Fix -->
+              <div>
+                <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ok);margin-bottom:8px;">Fix</div>
+                <p style="font-size:.88rem;color:var(--text-muted);line-height:1.65;margin-bottom:12px;">{err.fix}</p>
+                <div class="cblock">
+                  <div class="cblock-head">
+                    <span class="cblock-lang">{err.fixLang}</span>
+                    <button class="cbtn" onclick={`cb(this,${JSON.stringify(err.fixCode)})`}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+                    </button>
+                  </div>
+                  <pre class="ccode">{err.fixCode}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    <!-- Still stuck? -->
+    <div style="margin-top:36px;" class="rv">
+      <div class="info-box tip">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Still stuck? <a href="/contact">Open an issue on GitHub</a> or check <a href="/faq">the FAQ</a> for more answers about share-env errors and .env file sharing problems.</span>
+      </div>
+    </div>
+
+    <AdSlot slot={undefined} />
+  </div>
+</Base>

@@ -1,0 +1,108 @@
+---
+import Base from '../layouts/Base.astro';
+import AdSlot from '../components/AdSlot.astro';
+
+const faqs = [
+  { q: 'What is share-env?', a: 'share-env is a free, open-source CLI tool that lets developers securely share .env files using AES-256-GCM encryption. It works via npx — no installation or account needed. Run npx share-env push to share, and npx share-env pull <code> to receive.' },
+  { q: 'What is a .env file?', a: 'A .env file (dotenv file) is a plain-text configuration file that stores environment variables such as API keys, database URLs, and secrets. It is read by applications at startup and should never be committed to version control or shared in plain text.' },
+  { q: 'How do I share a .env file securely?', a: 'The safest way to share a .env file is to use an end-to-end encrypted tool like share-env. Run npx share-env push in your project directory, then send the generated share code to your teammate. They run npx share-env pull <code> to receive and decrypt it locally. The relay server never sees the decryption key.' },
+  { q: 'Is it safe to share .env files on Slack?', a: 'No. Sharing .env files on Slack is dangerous because messages are permanently logged, searchable by workspace admins, and accessible if the workspace is breached. Use an encrypted, burn-after-reading tool like share-env instead.' },
+  { q: 'What encryption does share-env use?', a: 'share-env uses AES-256-GCM (Advanced Encryption Standard, 256-bit key, Galois/Counter Mode). This provides both confidentiality and authentication — any tampering with the ciphertext is detected and rejected. The 256-bit key is generated locally and never transmitted to the relay server.' },
+  { q: 'What is a zero-knowledge relay server?', a: 'A zero-knowledge relay server stores only encrypted ciphertext and has no access to the decryption key. In share-env, the 64-character hex key is embedded in the share code and travels only through the channel you choose (e.g. Slack message). The relay server cannot decrypt what it stores.' },
+  { q: 'How long does a share-env payload last?', a: 'By default, share-env payloads expire after 10 minutes (600 seconds). If no one pulls the payload within that time, it is automatically and permanently deleted. This is the burn-after-reading TTL.' },
+  { q: 'Can a share-env payload be pulled more than once?', a: 'No. share-env is burn-after-reading. The payload is permanently deleted from the relay server the moment it is pulled for the first time. If you try to pull the same share code twice, you will get a 404 error.' },
+  { q: 'Do I need an account to use share-env?', a: 'No. share-env requires zero accounts, zero configuration, and zero API keys. Simply run npx share-env push in any project with Node.js 18+ and a .gitignore that covers .env files.' },
+  { q: 'What is the share-env share code format?', a: 'A share-env share code has the format phrase#hexKey, for example: apple-brave-cloud#a3f9b2c1d4e5.... The 3-word phrase is the relay lookup ID. The 64-character hex string after # is the AES-256-GCM decryption key. Both parts are required to decrypt the payload.' },
+  { q: 'What does npx share-env push do?', a: 'The push command reads your .env file, validates it, checks that .gitignore ignores .env, generates a random 256-bit key and 96-bit IV, encrypts the file with AES-256-GCM, uploads only the ciphertext to the relay server, and returns a one-time share code.' },
+  { q: 'What does npx share-env pull do?', a: 'The pull command takes a share code, extracts the relay lookup phrase and decryption key, fetches the encrypted payload from the relay server, decrypts it locally using AES-256-GCM, and writes the result to your .env file. The payload is deleted from the relay immediately after download.' },
+  { q: 'Can I share a file other than .env?', a: 'Yes. Use the --file flag: npx share-env push --file .env.staging to share a staging environment file, and npx share-env pull <code> --file .env.staging to receive it.' },
+  { q: 'Can I self-host the share-env relay server?', a: 'Yes. The relay server is open source and can be self-hosted on any Node.js 18+ host (Render, Railway, Fly.io, VPS). Clone the GitHub repo, run npm install and npm start, then point your CLI at it with the --server flag.' },
+  { q: 'What happens if the .env file already exists when I pull?', a: 'share-env compares the incoming .env with your existing one key-by-key. For any conflicting keys, it shows both values interactively and asks whether to keep the local or use the remote value — a smart merge flow.' },
+  { q: 'Why does share-env require .gitignore to cover .env?', a: 'This is a mandatory guardrail. share-env refuses to run (push or pull) if your .gitignore does not explicitly ignore .env and .env.* — preventing accidental commits of secrets to version control. This is not optional and cannot be disabled.' },
+  { q: 'What is the difference between .env and dotenv?', a: '.env is the filename (a hidden file starting with a dot). Dotenv is the convention of storing environment variables in .env files, popularized by the dotenv npm package which loads .env files into process.env in Node.js applications.' },
+  { q: 'Is share-env free and open source?', a: 'Yes. share-env is 100% free and MIT licensed. The source code is publicly available at github.com/arjunn881/env-share. The default relay server is provided free of charge with no usage limits (subject to rate limiting).' },
+  { q: 'What Node.js version does share-env require?', a: 'share-env requires Node.js 18 or higher. This is because it uses the built-in crypto module with AES-256-GCM support that was stabilized in Node.js 18+.' },
+  { q: 'How is share-env different from sharing .env on Slack or email?', a: 'On Slack and email, secrets are stored in plaintext forever with no expiry. share-env encrypts before upload, the relay sees only ciphertext, the payload self-destructs after one pull or 10 minutes, and the decryption key never touches the server — it only travels in the share code you control.' },
+];
+
+const faqSchemaData = faqs.map(f => ({ q: f.q, a: f.a }));
+---
+
+<Base
+  title="FAQ — Frequently Asked Questions About share-env and .env File Sharing"
+  description="Answers to the most common questions about share-env, .env file sharing, dotenv security, AES-256-GCM encryption, zero-knowledge relays, and more."
+  keywords="share env faq, dotenv questions, .env file sharing how to, share .env securely faq, npx share-env help, dotenv security questions, .env file encryption faq, share dot env file faq"
+  faqSchema={faqSchemaData}
+  pageType="FAQPage"
+>
+  <div class="container">
+    <div class="page-hero">
+      <nav aria-label="Breadcrumb" class="breadcrumb">
+        <a href="/">Home</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span aria-current="page">FAQ</span>
+      </nav>
+      <p class="sl">FAQ</p>
+      <h1>Frequently Asked Questions</h1>
+      <p class="desc">Everything you need to know about <strong>secure .env file sharing</strong>, <strong>dotenv encryption</strong>, and how share-env works.</p>
+    </div>
+
+    <!-- Quick answer boxes for AEO/featured snippets -->
+    <section style="padding-top:0;">
+      <div class="sh">
+        <p class="sl rv">Quick Answers</p>
+        <h2 class="st rv d1">The most important answers, first.</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;" class="rv">
+        {faqs.slice(0,4).map(f => (
+          <div class="answer-box">
+            <div class="ab-q">{f.q}</div>
+            <div class="ab-a">{f.a}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+
+    <!-- Full FAQ accordion -->
+    <section>
+      <div class="sh">
+        <p class="sl rv">All Questions</p>
+        <h2 class="st rv d1">20 questions about <span class="grad">.env file sharing</span>.</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;" class="rv">
+        {faqs.map((faq, i) => (
+          <div class={`acc-item${i < 4 ? ' open' : ''}`}>
+            <div class="acc-head" onclick="toggleAcc(this)">
+              <span style="font-size:.82rem;font-weight:700;color:var(--text);flex:1;line-height:1.45;">{faq.q}</span>
+              <span class="acc-chev">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </span>
+            </div>
+            <div class="acc-body">
+              <p style="font-size:.875rem;color:var(--text-muted);line-height:1.72;" itemprop="text">{faq.a}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Keyword cloud for programmatic SEO -->
+    <section style="padding-top:0;">
+      <div class="info-box tip rv">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div>
+          <strong>Related topics:</strong>
+          <div style="margin-top:8px;">
+            {['.env','dotenv','dot env','share env','env share','.env file sharing','.env file share','dot env file share','share dot env file','safely share dot env file','.env file share safely','secure dotenv sharing','encrypted env sharing','npx share-env','share-env cli','env file encryption','zero knowledge env sharing','burn after reading env','ephemeral env sharing','env relay server'].map(kw => (
+              <span class="kw-pill">{kw}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <AdSlot slot={undefined} />
+  </div>
+</Base>

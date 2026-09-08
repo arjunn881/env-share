@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>share-env — Secure .env Sharing for Developers</title>
+  <meta name="description" content="Share .env files securely between developers. AES-256-GCM encryption, burn-after-reading, zero setup. npx share-env push/pull."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060a12;--bg-1:#0b1220;--bg-2:#0f1a2e;--bg-card:rgba(11,18,32,0.8);
+  --border:rgba(61,255,176,0.1);--border-m:rgba(61,255,176,0.2);--border-b:rgba(61,255,176,0.35);
+  --accent:#3dffb0;--accent-2:#00d4ff;--accent-3:#a78bfa;
+  --accent-glow:rgba(61,255,176,0.15);--accent-dim:#183d2e;
+  --text:#dce8ff;--text-muted:#6b85a8;--text-dim:#2e4060;
+  --danger:#ff4d6d;--warn:#f59e0b;--ok:#10b981;
+  --r:12px;--r-lg:20px;--r-xl:28px;
+}
+html{font-size:16px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.65;overflow-x:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:#1a3a28;border-radius:3px}
+.container{max-width:1140px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+section{position:relative;z-index:1}
+code{font-family:'JetBrains Mono',monospace;font-size:.875em;color:var(--accent);background:rgba(61,255,176,0.07);padding:2px 6px;border-radius:4px}
+a{color:var(--accent);text-decoration:none}
+/* AMBIENT BG */
+.ambient{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.ambient-1{position:absolute;top:-30vh;left:-20vw;width:80vw;height:80vh;background:radial-gradient(ellipse,rgba(61,255,176,0.055) 0%,transparent 65%);border-radius:50%}
+.ambient-2{position:absolute;bottom:-20vh;right:-10vw;width:60vw;height:60vh;background:radial-gradient(ellipse,rgba(0,212,255,0.04) 0%,transparent 65%);border-radius:50%}
+.ambient-3{position:absolute;top:40vh;right:20vw;width:40vw;height:40vh;background:radial-gradient(ellipse,rgba(167,139,250,0.03) 0%,transparent 65%);border-radius:50%}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:0 28px;height:62px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,10,18,0.6);backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--border);transition:background .3s}
+nav.scrolled{background:rgba(6,10,18,0.92)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;color:var(--accent);letter-spacing:-.3px}
+.nav-logo svg{width:20px;height:20px}
+.nav-links{display:flex;gap:6px;list-style:none}
+.nav-links a{color:var(--text-muted);font-size:.82rem;font-weight:500;padding:6px 12px;border-radius:7px;transition:all .2s}
+.nav-links a:hover{color:var(--accent);background:var(--accent-glow)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.nav-npm{display:flex;align-items:center;gap:6px;background:rgba(203,56,55,0.12);border:1px solid rgba(203,56,55,0.25);color:#fb7185;padding:6px 14px;border-radius:7px;font-size:.78rem;font-weight:600;transition:all .2s}
+.nav-npm:hover{background:rgba(203,56,55,0.2)}
+.nav-gh{display:flex;align-items:center;gap:6px;background:var(--accent);color:var(--bg);padding:6px 16px;border-radius:7px;font-size:.82rem;font-weight:700;transition:all .2s}
+.nav-gh:hover{opacity:.88;transform:translateY(-1px)}
+/* HERO */
+#hero{min-height:100vh;display:flex;align-items:center;padding:100px 0 80px}
+.hero-inner{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.hero-pill{display:inline-flex;align-items:center;gap:8px;background:rgba(61,255,176,0.08);border:1px solid var(--border-m);color:var(--accent);padding:5px 14px;border-radius:100px;font-size:.72rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:22px}
+.hero-pill .dot-live{width:6px;height:6px;background:var(--ok);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+h1{font-size:clamp(2.4rem,4.5vw,3.8rem);font-weight:900;line-height:1.05;letter-spacing:-2.5px;margin-bottom:20px}
+.grad{background:linear-gradient(140deg,var(--accent) 0%,var(--accent-2) 60%,var(--accent-3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.05rem;color:var(--text-muted);max-width:460px;margin-bottom:32px;line-height:1.75}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:10px;font-weight:700;font-size:.875rem;transition:all .2s;cursor:pointer;border:none;text-decoration:none}
+.btn-p{background:var(--accent);color:var(--bg)}
+.btn-p:hover{opacity:.88;transform:translateY(-2px);box-shadow:0 10px 32px rgba(61,255,176,0.28)}
+.btn-s{background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--border-m)}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+.npx-bar{display:inline-flex;align-items:center;gap:12px;background:rgba(61,255,176,0.06);border:1px solid var(--border-m);border-radius:10px;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:.8rem;cursor:pointer;transition:all .2s;position:relative}
+.npx-bar:hover{background:rgba(61,255,176,0.1);border-color:var(--border-b)}
+.npx-bar .prompt{color:var(--text-dim)}
+.npx-bar .cmd{color:var(--accent)}
+.npx-bar .copy-hint{font-size:.65rem;color:var(--text-dim);margin-left:4px}
+.npx-toast{position:absolute;top:-32px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap}
+.npx-toast.show{opacity:1}
+/* TERMINAL */
+.term-wrap{position:relative}
+.term-glow{position:absolute;inset:-40px;background:radial-gradient(ellipse,rgba(61,255,176,0.08) 0%,transparent 70%);pointer-events:none}
+.term{background:#05080f;border:1px solid var(--border-m);border-radius:var(--r-xl);overflow:hidden;box-shadow:0 48px 96px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04)}
+.term-bar{background:#0d1220;padding:12px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.dots{display:flex;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#ffbd2e}.dot.g{background:#28c840}
+.term-title{flex:1;text-align:center;font-size:.68rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.term-body{padding:22px 24px;font-family:'JetBrains Mono',monospace;font-size:.77rem;line-height:1.85;min-height:300px}
+.tl{display:flex;gap:8px;align-items:flex-start}
+.tp{color:var(--accent);user-select:none;flex-shrink:0}
+.tc{color:var(--text)}
+.to{color:var(--text-muted);padding-left:18px}
+.ts{color:var(--ok)}
+.tw{color:var(--warn)}
+.te{color:var(--danger)}
+.tb{border:1px solid var(--border-m);border-radius:6px;padding:8px 14px;margin:4px 0 6px 18px;color:var(--accent);font-size:.74rem}
+.blink{display:inline-block;width:7px;height:13px;background:var(--accent);animation:bl 1.1s step-end infinite;vertical-align:middle;margin-left:1px}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
+/* SECTION SHARED */
+.sl{font-size:.68rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sl::before{content:'';width:20px;height:1px;background:var(--accent)}
+.st{font-size:clamp(1.8rem,3vw,2.6rem);font-weight:800;letter-spacing:-1.3px;line-height:1.12;margin-bottom:14px}
+.ss{font-size:.975rem;color:var(--text-muted);max-width:560px;line-height:1.72}
+.sh{margin-bottom:60px}
+/* DIVIDER */
+.sec-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border-m),transparent);margin:0}
+/* STATS */
+#stats{padding:64px 0;background:linear-gradient(180deg,rgba(61,255,176,0.03) 0%,transparent 100%)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)}
+.stat-cell{background:var(--bg);padding:32px 24px;text-align:center}
+.stat-n{font-family:'JetBrains Mono',monospace;font-size:2.4rem;font-weight:900;letter-spacing:-2px;background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-l{font-size:.78rem;color:var(--text-muted);margin-top:6px;line-height:1.4}
+/* PROBLEM */
+#problem{padding:100px 0}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.ccard{border-radius:var(--r-lg);padding:32px;border:1px solid var(--border);background:var(--bg-card);backdrop-filter:blur(14px);transition:transform .3s}
+.ccard:hover{transform:translateY(-3px)}
+.ccard.bad{border-color:rgba(255,77,109,.18);background:rgba(255,77,109,.03)}
+.ccard.good{border-color:rgba(61,255,176,.18)}
+.cc-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cc-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.cc-icon.bad{background:rgba(255,77,109,.12);color:var(--danger)}
+.cc-icon.good{background:rgba(61,255,176,.1);color:var(--accent)}
+.cc-icon svg{width:18px;height:18px}
+.cc-title{font-weight:700;font-size:.95rem}
+.cc-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.cc-list li{font-size:.855rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;line-height:1.55}
+.cc-list svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
+.cc-list.bad svg{color:var(--danger)}.cc-list.good svg{color:var(--accent)}
+/* HOW */
+#how{padding:100px 0}
+.flow-wrap{position:relative}
+.flow-grid{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:start;gap:0}
+.fnode{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 22px;backdrop-filter:blur(14px);transition:border-color .3s}
+.fnode:hover{border-color:var(--border-m)}
+.fnode-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:1px solid var(--border-m)}
+.fnode-icon svg{width:22px;height:22px}
+.fnode.sender .fnode-icon{background:rgba(61,255,176,.08);color:var(--accent)}
+.fnode.relay .fnode-icon{background:rgba(0,212,255,.08);color:var(--accent-2)}
+.fnode.relay{border-color:rgba(0,212,255,.2)}
+.fnode.receiver .fnode-icon{background:rgba(167,139,250,.08);color:var(--accent-3)}
+.fnode.receiver{border-color:rgba(167,139,250,.2)}
+.fnode-title{text-align:center;font-weight:700;font-size:.88rem;margin-bottom:14px}
+.fsteps{list-style:none;display:flex;flex-direction:column;gap:6px}
+.fsteps li{font-size:.75rem;color:var(--text-muted);display:flex;gap:7px;align-items:flex-start;line-height:1.5}
+.fn{min-width:16px;height:16px;border-radius:4px;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.sender .fn{background:rgba(61,255,176,.15);color:var(--accent)}
+.relay .fn{background:rgba(0,212,255,.15);color:var(--accent-2)}
+.receiver .fn{background:rgba(167,139,250,.15);color:var(--accent-3)}
+.farrow{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:56px;gap:6px;width:56px}
+.farrow-label{font-size:.58rem;font-family:'JetBrains Mono',monospace;color:var(--text-dim);white-space:nowrap;text-align:center}
+.farrow svg{width:16px;height:16px;color:var(--border-b)}
+/* FEATURES */
+#features{padding:100px 0}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.fc{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);padding:28px 24px;backdrop-filter:blur(14px);transition:all .3s;position:relative;overflow:hidden}
+.fc::after{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s}
+.fc:hover{border-color:var(--border-m);transform:translateY(-4px);box-shadow:0 24px 64px rgba(0,0,0,.5)}
+.fc:hover::after{opacity:1}
+.fi{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;border:1px solid var(--border-m)}
+.fi svg{width:20px;height:20px}
+.fc.f0 .fi{background:rgba(61,255,176,.08);color:var(--accent)}
+.fc.f1 .fi{background:rgba(255,77,109,.08);color:var(--danger)}
+.fc.f2 .fi{background:rgba(0,212,255,.08);color:var(--accent-2)}
+.fc.f3 .fi{background:rgba(245,158,11,.08);color:var(--warn)}
+.fc.f4 .fi{background:rgba(167,139,250,.08);color:var(--accent-3)}
+.fc.f5 .fi{background:rgba(16,185,129,.08);color:var(--ok)}
+.ft{font-weight:700;font-size:.93rem;margin-bottom:8px}
+.fd{font-size:.845rem;color:var(--text-muted);line-height:1.65}
+  </style>
+</head>
+  <style>
+/* CLI DOCS */
+#cli{padding:100px 0}
+.doc-layout{display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start}
+.doc-nav{position:sticky;top:82px}
+.doc-nav-title{font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding:0 10px}
+.doc-nav-items{list-style:none;display:flex;flex-direction:column;gap:2px}
+.doc-nav-items a{display:block;padding:7px 12px;border-radius:7px;font-size:.82rem;color:var(--text-muted);transition:all .2s;border-left:2px solid transparent}
+.doc-nav-items a:hover{color:var(--accent);background:var(--accent-glow);border-left-color:var(--accent)}
+.doc-nav-items a.active{color:var(--accent);background:var(--accent-glow);border-left-color:var(--accent)}
+.doc-content{display:flex;flex-direction:column;gap:40px}
+.doc-section{display:flex;flex-direction:column;gap:20px}
+.doc-section-title{font-size:1.15rem;font-weight:700;letter-spacing:-.5px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.doc-section-title svg{width:18px;height:18px;color:var(--accent)}
+.cblock{background:#040710;border:1px solid var(--border-m);border-radius:var(--r);overflow:hidden}
+.cblock-head{background:#0a1020;padding:9px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.cblock-lang{font-size:.65rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+.cbtn{display:flex;align-items:center;gap:5px;background:none;border:1px solid var(--border);border-radius:5px;padding:4px 9px;font-size:.67rem;color:var(--text-muted);cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.cbtn svg{width:11px;height:11px}
+.cbtn:hover{border-color:var(--accent);color:var(--accent)}
+.cbtn.ok{color:var(--ok);border-color:var(--ok)}
+.ccode{padding:18px 22px;font-family:'JetBrains Mono',monospace;font-size:.775rem;line-height:1.8;overflow-x:auto}
+.ky{color:var(--accent-2)}.st{color:#f59e0b}.cm{color:var(--text-dim)}.cn{color:var(--accent)}.cp{color:var(--accent)}.vl{color:#a78bfa}
+.opt-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.opt-table th{text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:.7rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.opt-table td{padding:11px 14px;border-bottom:1px solid rgba(61,255,176,.04);color:var(--text-muted);vertical-align:top}
+.opt-table td:first-child{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:.77rem}
+.opt-table td.req{color:var(--danger);font-size:.75rem;font-weight:600}
+.opt-table td.opt{color:var(--text-dim);font-size:.75rem}
+.opt-table tr:last-child td{border-bottom:none}
+.info-box{display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border-radius:var(--r);font-size:.84rem;color:var(--text-muted);line-height:1.6}
+.info-box svg{flex-shrink:0;margin-top:1px;width:18px;height:18px}
+.info-box.tip{background:rgba(61,255,176,.05);border:1px solid rgba(61,255,176,.15)}
+.info-box.tip svg{color:var(--accent)}
+.info-box.warn{background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15)}
+.info-box.warn svg{color:var(--warn)}
+.info-box.danger{background:rgba(255,77,109,.05);border:1px solid rgba(255,77,109,.15)}
+.info-box.danger svg{color:var(--danger)}
+/* SECURITY */
+#security{padding:100px 0}
+.sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.sec-card{background:var(--bg-card);border:1px solid var(--border-m);border-radius:var(--r-lg);overflow:hidden;backdrop-filter:blur(14px)}
+.sec-card-head{padding:18px 24px;border-bottom:1px solid var(--border);font-size:.78rem;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sec-card-head svg{width:14px;height:14px;color:var(--accent)}
+.sec-steps{padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+.ss-item{display:flex;gap:14px;align-items:flex-start}
+.ss-n{min-width:24px;height:24px;border-radius:6px;background:var(--accent-dim);color:var(--accent);font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.ss-t{font-size:.83rem;color:var(--text-muted);line-height:1.6}
+.ss-t strong{color:var(--text)}
+.threat-tbl{width:100%;border-collapse:collapse}
+.threat-tbl th{text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.threat-tbl td{padding:12px 16px;border-bottom:1px solid rgba(61,255,176,.03);font-size:.82rem;vertical-align:top}
+.threat-tbl tr:last-child td{border-bottom:none}
+.td-threat{color:var(--danger);font-weight:500}
+.td-mit{color:var(--text-muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:.67rem;font-weight:600}
+.chip.ok{background:rgba(16,185,129,.1);color:var(--ok);border:1px solid rgba(16,185,129,.2)}
+.chip.warn{background:rgba(245,158,11,.1);color:var(--warn);border:1px solid rgba(245,158,11,.2)}
+/* ERRORS */
+#errors{padding:100px 0}
+.err-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.err-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
+.err-card:hover{border-color:var(--border-m)}
+.err-head{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;background:var(--bg-card);backdrop-filter:blur(14px);user-select:none}
+.err-badge{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:6px;flex-shrink:0}
+.err-badge.fatal{background:rgba(255,77,109,.12);color:var(--danger);border:1px solid rgba(255,77,109,.2)}
+.err-badge.err{background:rgba(245,158,11,.12);color:var(--warn);border:1px solid rgba(245,158,11,.2)}
+.err-badge.info{background:rgba(0,212,255,.1);color:var(--accent-2);border:1px solid rgba(0,212,255,.2)}
+.err-title{flex:1;font-weight:600;font-size:.88rem;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.err-chev{color:var(--text-dim);transition:transform .3s}
+.err-chev svg{width:15px;height:15px}
+.err-card.open .err-chev{transform:rotate(180deg)}
+.err-body{display:none;padding:20px;border-top:1px solid var(--border);font-size:.855rem;color:var(--text-muted);line-height:1.65}
+.err-card.open .err-body{display:block}
+.err-body .cblock{margin-top:14px}
+.err-causes{margin:12px 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.err-causes li{display:flex;gap:8px;align-items:flex-start}
+.err-causes svg{width:13px;height:13px;color:var(--warn);flex-shrink:0;margin-top:2px}
+/* HOSTING */
+#hosting{padding:100px 0}
+.host-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.host-steps{display:flex;flex-direction:column;gap:6px}
+.hs{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.hs-head{display:flex;align-items:center;gap:12px;padding:15px 20px;cursor:pointer;background:var(--bg-card);backdrop-filter:blur(14px);user-select:none;transition:background .2s}
+.hs-head:hover{background:rgba(61,255,176,.04)}
+.hs-num{min-width:26px;height:26px;border-radius:6px;background:var(--accent-dim);color:var(--accent);font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace}
+.hs-title{flex:1;font-weight:600;font-size:.88rem}
+.hs-chev{color:var(--text-dim);transition:transform .3s}
+.hs-chev svg{width:14px;height:14px}
+.hs.open .hs-chev{transform:rotate(180deg)}
+.hs-body{display:none;padding:18px 20px;border-top:1px solid var(--border);font-size:.855rem;color:var(--text-muted)}
+.hs.open .hs-body{display:block}
+.hs-body .cblock{margin-top:12px;margin-bottom:0}
+.server-config{background:var(--bg-card);border:1px solid var(--border-m);border-radius:var(--r-lg);overflow:hidden;backdrop-filter:blur(14px)}
+.sc-head{padding:16px 22px;border-bottom:1px solid var(--border);font-size:.78rem;font-weight:700;color:var(--text-muted);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.sc-head svg{width:14px;height:14px;color:var(--accent)}
+.sc-table{width:100%;border-collapse:collapse}
+.sc-table th{text-align:left;padding:9px 16px;border-bottom:1px solid var(--border);font-size:.68rem;font-weight:600;color:var(--text-dim);letter-spacing:.5px;text-transform:uppercase}
+.sc-table td{padding:10px 16px;border-bottom:1px solid rgba(61,255,176,.04);font-size:.82rem;color:var(--text-muted);vertical-align:top}
+.sc-table td:first-child{font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:.77rem}
+.sc-table td:nth-child(2){font-family:'JetBrains Mono',monospace;color:var(--accent-3);font-size:.77rem}
+.sc-table tr:last-child td{border-bottom:none}
+/* FOOTER */
+footer{padding:60px 0 36px;position:relative;z-index:1}
+.foot-top{display:flex;justify-content:space-between;align-items:flex-start;gap:40px;padding-bottom:36px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.foot-brand{display:flex;flex-direction:column;gap:10px}
+.foot-logo{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--accent);font-size:.95rem}
+.foot-logo svg{width:18px;height:18px}
+.foot-desc{font-size:.8rem;color:var(--text-muted);max-width:260px;line-height:1.6}
+.foot-links-group{display:flex;gap:48px;flex-wrap:wrap}
+.flg-title{font-size:.68rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px}
+.flg-items{list-style:none;display:flex;flex-direction:column;gap:8px}
+.flg-items a{font-size:.82rem;color:var(--text-muted);transition:color .2s}
+.flg-items a:hover{color:var(--accent)}
+.foot-bottom{padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.foot-copy{font-size:.75rem;color:var(--text-dim)}
+.foot-badges{display:flex;gap:8px;flex-wrap:wrap}
+.fbadge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:.67rem;font-weight:600;border:1px solid var(--border);color:var(--text-dim);background:rgba(255,255,255,.02)}
+.fbadge svg{width:11px;height:11px}
+/* REVEAL */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .55s ease,transform .55s ease}
+.rv.in{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}.d5{transition-delay:.4s}
+/* RESPONSIVE — mobile-first progressive enhancement */
+
+/* ── 2xl: 1400px+ ultrawide ── */
+@media(min-width:1400px){
+  .container{max-width:1320px}
+  #hero{min-height:100vh}
+  .hero-inner{gap:80px}
+  h1{font-size:4.2rem}
+}
+
+/* ── xl: 1200px breakpoint ── */
+@media(max-width:1200px){
+  .flow-grid{grid-template-columns:1fr auto 1fr auto 1fr}
+  .feat-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ── lg: tablet landscape / small desktop 960px ── */
+@media(max-width:1024px){
+  .nav-links a{padding:6px 8px;font-size:.78rem}
+  .hero-inner{gap:40px}
+  h1{font-size:clamp(2rem,5vw,3.2rem)}
+  .feat-grid{grid-template-columns:1fr 1fr;gap:14px}
+  .flow-grid{grid-template-columns:1fr auto 1fr auto 1fr}
+  .fsteps li{font-size:.72rem}
+  .doc-layout{gap:28px}
+}
+
+/* ── md: tablet portrait 768px ── */
+@media(max-width:960px){
+  .hero-inner{grid-template-columns:1fr;gap:36px}
+  .term-wrap{order:-1}
+  .sec-grid,.host-grid{grid-template-columns:1fr}
+  .flow-grid{grid-template-columns:1fr;gap:10px}
+  .farrow{display:none}
+  .compare-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .doc-layout{grid-template-columns:1fr}
+  .doc-nav{display:none}
+  section{padding:72px 0!important}
+  #stats{padding:48px 0!important}
+  .sh{margin-bottom:40px}
+  .flow-grid{display:flex;flex-direction:column}
+}
+
+/* ── sm: large phone 640px ── */
+@media(max-width:640px){
+  nav{padding:0 16px;height:56px}
+  .nav-links{display:none}
+  .nav-npm{display:none}
+  .nav-gh{padding:5px 12px;font-size:.76rem}
+  .nav-logo{font-size:.88rem}
+  #hero{padding:80px 0 60px}
+  h1{font-size:clamp(1.9rem,8vw,2.8rem);letter-spacing:-1.5px}
+  .hero-sub{font-size:.93rem}
+  .hero-ctas{flex-direction:column;gap:10px}
+  .hero-ctas .btn{width:100%;justify-content:center}
+  .npx-bar{width:100%;justify-content:center;font-size:.75rem}
+  .feat-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .stat-cell{padding:22px 16px}
+  .stat-n{font-size:1.8rem}
+  .foot-top{flex-direction:column;gap:28px}
+  .foot-links-group{gap:28px}
+  .foot-bottom{flex-direction:column;align-items:flex-start;gap:12px}
+  .opt-table{font-size:.78rem}
+  .opt-table th,.opt-table td{padding:8px 10px}
+  .err-title{font-size:.78rem}
+  .err-badge{font-size:.62rem;padding:2px 7px}
+  .fnode{padding:20px 16px}
+  .fnode-title{font-size:.82rem}
+  .ccode{font-size:.72rem;padding:14px 16px}
+  .cblock-head{padding:8px 14px}
+}
+
+/* ── xs: small phone 400px ── */
+@media(max-width:400px){
+  h1{font-size:1.85rem;letter-spacing:-1px}
+  .hero-pill{font-size:.65rem;padding:4px 11px}
+  .stats-row{grid-template-columns:1fr}
+  .stat-cell{padding:18px 16px;border-bottom:1px solid var(--border)}
+  .fc{padding:22px 18px}
+  .hs-title{font-size:.82rem}
+  .doc-section-title{font-size:1rem}
+  .err-head{flex-wrap:wrap;gap:8px}
+  .err-title{font-size:.75rem;min-width:0;flex:1 1 0}
+  footer{padding:40px 0 24px}
+}
+  </style>
+<body>
+<div class="ambient"><div class="ambient-1"></div><div class="ambient-2"></div><div class="ambient-3"></div></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="nav-logo" href="javascript:void(0)" onclick="scrollTo('#hero')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8-3 4 3 4"/><path d="m15 8 3 4-3 4"/></svg>
+    share-env
+  </a>
+  <ul class="nav-links">
+    <li><a href="javascript:void(0)" onclick="scrollTo('#how')">How it works</a></li>
+    <li><a href="javascript:void(0)" onclick="scrollTo('#features')">Features</a></li>
+    <li><a href="javascript:void(0)" onclick="scrollTo('#cli')">Docs</a></li>
+    <li><a href="javascript:void(0)" onclick="scrollTo('#security')">Security</a></li>
+    <li><a href="javascript:void(0)" onclick="scrollTo('#errors')">Errors</a></li>
+    <li><a href="javascript:void(0)" onclick="scrollTo('#hosting')">Self-host</a></li>
+  </ul>
+  <div class="nav-right">
+    <a class="nav-npm" href="https://www.npmjs.com/package/share-env" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M0 0v24h24V0H0zm19.2 19.2H4.8V4.8h14.4v14.4z"/><path d="M7.2 7.2h9.6v9.6H14.4V9.6h-2.4v7.2H7.2V7.2z"/></svg>
+      npm
+    </a>
+    <a class="nav-gh" href="https://github.com/arjunn881/env-share" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-pill rv">
+          <span class="dot-live"></span>
+          v1.0.9 on npm &nbsp;&middot;&nbsp; MIT License
+        </div>
+        <h1 class="rv d1">Stop DMing<br><span class="grad">.env files.</span></h1>
+        <p class="hero-sub rv d2">End-to-end encrypted <code>.env</code> sharing. The decryption key <strong>never touches the server</strong>. One pull and the payload is gone forever &mdash; no accounts, no setup, no risk.</p>
+        <div class="hero-ctas rv d3">
+          <a class="btn btn-p" href="javascript:void(0)" onclick="scrollTo('#how')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            See how it works
+          </a>
+          <a class="btn btn-s" href="javascript:void(0)" onclick="scrollTo('#cli')">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Read the docs
+          </a>
+        </div>
+        <div class="npx-bar rv d4" id="npx-bar" onclick="copyNpx()" title="Click to copy">
+          <div class="npx-toast" id="npx-toast">Copied!</div>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          <span class="prompt">$</span><span class="cmd">&nbsp;npx share-env push</span>
+          <span class="copy-hint">click to copy</span>
+        </div>
+      </div>
+      <div class="term-wrap rv d2">
+        <div class="term-glow"></div>
+        <div class="term">
+          <div class="term-bar">
+            <div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+            <span class="term-title">zsh &mdash; ~/projects/my-app</span>
+          </div>
+          <div class="term-body" id="term-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="sec-divider"></div>
+<section id="stats">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat-cell rv"><div class="stat-n">AES-256</div><div class="stat-l">GCM authenticated<br>encryption standard</div></div>
+      <div class="stat-cell rv d1"><div class="stat-n">0</div><div class="stat-l">accounts, config files<br>or API keys required</div></div>
+      <div class="stat-cell rv d2"><div class="stat-n">10m</div><div class="stat-l">TTL — auto-deleted<br>if not collected</div></div>
+      <div class="stat-cell rv d3"><div class="stat-n">1&times;</div><div class="stat-l">pull only — permanently<br>burned after reading</div></div>
+    </div>
+  </div>
+</section>
+<div class="sec-divider"></div>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">The problem</p>
+      <h2 class="st rv d1">Your secrets deserve better<br>than a Slack message.</h2>
+      <p class="ss rv d2">Every day, developers copy-paste <code>.env</code> files into chat apps, emails, and shared notes. Those secrets live in logs and history forever.</p>
+    </div>
+    <div class="compare-grid">
+      <div class="ccard bad rv">
+        <div class="cc-head">
+          <div class="cc-icon bad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+          <div class="cc-title">The old way &mdash; dangerous</div>
+        </div>
+        <ul class="cc-list bad">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Secrets visible in Slack, Discord, email history indefinitely</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Workspace admins, bots, and future breaches can access them</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>No expiry &mdash; shared secrets sit around forever</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Easy to accidentally commit to git if re-shared as a file</li>
+        </ul>
+      </div>
+      <div class="ccard good rv d1">
+        <div class="cc-head">
+          <div class="cc-icon good"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+          <div class="cc-title">share-env &mdash; secure by design</div>
+        </div>
+        <ul class="cc-list good">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>AES-256-GCM encrypted before leaving your machine</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Relay server sees only ciphertext &mdash; never the key</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Auto-expires after 10 minutes, deleted on first pull</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Blocks the tool if .gitignore doesn't protect .env</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">How it works</p>
+      <h2 class="st rv d1">Zero-knowledge relay in three steps.</h2>
+      <p class="ss rv d2">The decryption key travels exclusively inside the share code &mdash; the relay server is completely blind to it.</p>
+    </div>
+    <div class="flow-grid rv">
+      <div class="fnode sender">
+        <div class="fnode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <div class="fnode-title">Developer A &mdash; Sender</div>
+        <ul class="fsteps">
+          <li><span class="fn">1</span>Generate random 256-bit key in local memory</li>
+          <li><span class="fn">2</span>Generate random 96-bit IV</li>
+          <li><span class="fn">3</span>Encrypt .env with AES-256-GCM</li>
+          <li><span class="fn">4</span>POST ciphertext + IV + auth tag to relay</li>
+          <li><span class="fn">5</span>Build share code: <code style="font-size:.72em">phrase#hexKey</code></li>
+          <li><span class="fn">6</span>Send code via Slack / Teams / Signal</li>
+        </ul>
+      </div>
+      <div class="farrow">
+        <div class="farrow-label">ciphertext<br>only</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="fnode relay">
+        <div class="fnode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="fnode-title">Relay Server (blind)</div>
+        <ul class="fsteps">
+          <li><span class="fn">A</span>Receives &amp; stores ciphertext only</li>
+          <li><span class="fn">B</span>Returns 3-word phrase ID</li>
+          <li><span class="fn">C</span>On GET: returns payload...</li>
+          <li><span class="fn">D</span>...then <strong style="color:var(--danger)">permanently deletes it</strong></li>
+          <li><span class="fn">E</span>Auto-expires payloads after 10m TTL</li>
+          <li><span class="fn">F</span>Rate limits: 10 req/min per IP</li>
+        </ul>
+      </div>
+      <div class="farrow">
+        <div class="farrow-label">encrypted<br>payload</div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="fnode receiver">
+        <div class="fnode-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="fnode-title">Developer B &mdash; Receiver</div>
+        <ul class="fsteps">
+          <li><span class="fn">7</span>Run <code style="font-size:.72em">npx share-env pull &lt;code&gt;</code></li>
+          <li><span class="fn">8</span>Parse share code: extract phrase + key</li>
+          <li><span class="fn">9</span>GET relay using phrase only (no key)</li>
+          <li><span class="fn">10</span>Decrypt locally using extracted key</li>
+          <li><span class="fn">11</span>Smart-merge into existing .env</li>
+          <li><span class="fn">12</span>Write merged result to disk</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">Features</p>
+      <h2 class="st rv d1">Built with security non-negotiable.</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="fc f0 rv">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="ft">Zero-Knowledge Encryption</div>
+        <div class="fd">AES-256-GCM key is generated locally and never transmitted. Even full relay compromise yields only unreadable ciphertext.</div>
+      </div>
+      <div class="fc f1 rv d1">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        <div class="ft">Burn-After-Reading</div>
+        <div class="fd">Payload is permanently deleted from the relay the moment it is pulled. It cannot be retrieved a second time by anyone.</div>
+      </div>
+      <div class="fc f2 rv d2">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <div class="ft">Smart Merge</div>
+        <div class="fd">If you already have a <code>.env</code>, the tool detects conflicts key-by-key and interactively asks you to choose local or remote.</div>
+      </div>
+      <div class="fc f3 rv d1">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg></div>
+        <div class="ft">Git Guardrails</div>
+        <div class="fd">Refuses to run unless your <code>.gitignore</code> explicitly ignores <code>.env</code> and <code>.env.*</code> files. Prevents accidental secret commits.</div>
+      </div>
+      <div class="fc f4 rv d2">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div class="ft">Zero Setup</div>
+        <div class="fd">No global install, no accounts, no config. Run via <code>npx share-env</code>. Requires only Node.js 18+. Works instantly out of the box.</div>
+      </div>
+      <div class="fc f5 rv d3">
+        <div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="ft">10-Minute TTL</div>
+        <div class="fd">Share codes expire automatically after 10 minutes. Uncollected payloads are permanently purged from the relay &mdash; nothing lingers.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- CLI DOCS -->
+<section id="cli">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">CLI Reference</p>
+      <h2 class="st rv d1">Two commands. That's it.</h2>
+      <p class="ss rv d2">No config files. No environment variables. Install-free &mdash; run directly with <code>npx</code>.</p>
+    </div>
+    <div class="doc-layout rv">
+      <aside class="doc-nav">
+        <div class="doc-nav-title">Commands</div>
+        <ul class="doc-nav-items">
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-install')" class="active">Installation</a></li>
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-push')">push</a></li>
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-pull')">pull</a></li>
+        </ul>
+        <div class="doc-nav-title" style="margin-top:20px">Guides</div>
+        <ul class="doc-nav-items">
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-workflow')">Step-by-step</a></li>
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-merge')">Merge conflicts</a></li>
+          <li><a href="javascript:void(0)" onclick="scrollTo('#doc-custom-path')">Custom paths</a></li>
+        </ul>
+      </aside>
+      <div class="doc-content">
+
+        <!-- INSTALL -->
+        <div class="doc-section" id="doc-install">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+            Installation
+          </div>
+          <div class="info-box tip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span><strong>No installation required.</strong> Run directly with <code>npx</code>. The package is fetched and executed on demand. You need Node.js 18+ installed.</span>
+          </div>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env --help')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># No global install needed</span>
+<span class="cp">$</span> npx share-env --help
+
+<span class="cm"># Optional: install globally for frequent use</span>
+<span class="cp">$</span> npm install -g share-env</div>
+          </div>
+          <div class="info-box warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span><strong>Prerequisites:</strong> Your project must have a <code>.gitignore</code> file that explicitly ignores <code>.env</code> and <code>.env.*</code>. The tool will refuse to run otherwise.</span>
+          </div>
+        </div>
+
+        <!-- PUSH -->
+        <div class="doc-section" id="doc-push">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.29"/></svg>
+            push
+          </div>
+          <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7">Reads your <code>.env</code> file, validates it, encrypts it locally with AES-256-GCM, and uploads only the ciphertext to the relay server. Returns a one-time share code.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">usage</span><button class="cbtn" onclick="cb(this,'npx share-env push [options]')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cp">$</span> npx share-env push [options]</div>
+          </div>
+          <table class="opt-table">
+            <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>-f, --file &lt;path&gt;</td><td style="color:var(--accent-3);font-size:.78rem">string</td><td style="font-family:'JetBrains Mono',monospace;font-size:.77rem;color:var(--text-dim)">.env</td><td>Path to the .env file to encrypt and share</td></tr>
+              <tr><td>--server &lt;url&gt;</td><td style="color:var(--accent-3);font-size:.78rem">string</td><td style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim)">env-share-1rsi.onrender.com</td><td>Override the relay server base URL</td></tr>
+            </tbody>
+          </table>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">examples</span><button class="cbtn" onclick="cb(this,'npx share-env push\nnpx share-env push --file ./config/.env.production\nnpx share-env push --server https://your-relay.example.com')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Share default .env</span>
+<span class="cp">$</span> npx share-env push
+
+<span class="cm"># Share a specific env file</span>
+<span class="cp">$</span> npx share-env push <span class="ky">--file</span> <span class="st">./config/.env.production</span>
+
+<span class="cm"># Use a self-hosted relay</span>
+<span class="cp">$</span> npx share-env push <span class="ky">--server</span> <span class="st">https://your-relay.example.com</span></div>
+          </div>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">output</span></div>
+            <div class="ccode" style="color:var(--text-muted)">  3 key(s) loaded from <span style="color:var(--accent)">.env</span>
+
+  Encrypted payload stored on relay.
+
+  Payload uploaded. Your share code:
+
+  <span style="color:rgba(61,255,176,.3)">+--------------------------------------------------+</span>
+  <span style="color:rgba(61,255,176,.3)">|</span>  <span style="color:var(--accent)">apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2...</span>  <span style="color:rgba(61,255,176,.3)">|</span>
+  <span style="color:rgba(61,255,176,.3)">+--------------------------------------------------+</span>
+
+  Send the code above to your teammate.
+  <span style="color:var(--warn)">It expires in 10 minutes. One-time use only.</span></div>
+          </div>
+        </div>
+
+        <!-- PULL -->
+        <div class="doc-section" id="doc-pull">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 8 12 12 16 8"/><line x1="12" y1="3" x2="12" y2="12"/><path d="M20.39 18.39A5 5 0 0018 15h-1.26A8 8 0 103 16.29"/></svg>
+            pull
+          </div>
+          <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7">Fetches the encrypted payload from the relay using the phrase, decrypts it locally using the key in the share code, and merges it into your local <code>.env</code>.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">usage</span><button class="cbtn" onclick="cb(this,'npx share-env pull <share-code> [options]')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cp">$</span> npx share-env pull <span class="st">&lt;share-code&gt;</span> [options]</div>
+          </div>
+          <table class="opt-table">
+            <thead><tr><th>Argument / Option</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>&lt;share-code&gt;</td><td class="req">Yes</td><td style="color:var(--text-dim);font-size:.77rem">&mdash;</td><td>Full share code from sender. Format: <code>phrase#hexKey</code></td></tr>
+              <tr><td>-f, --file &lt;path&gt;</td><td class="opt">No</td><td style="font-family:'JetBrains Mono',monospace;font-size:.77rem;color:var(--text-dim)">.env</td><td>Target path to write the decrypted env file</td></tr>
+              <tr><td>--server &lt;url&gt;</td><td class="opt">No</td><td style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text-dim)">env-share-1rsi.onrender.com</td><td>Override the relay server base URL</td></tr>
+            </tbody>
+          </table>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">examples</span><button class="cbtn" onclick="cb(this,'npx share-env pull apple-brave-cloud#a3f9b2c1...\nnpx share-env pull apple-brave-cloud#a3f9b2c1... --file ./config/.env.local')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Pull into default .env</span>
+<span class="cp">$</span> npx share-env pull <span class="st">apple-brave-cloud#a3f9b2c1...</span>
+
+<span class="cm"># Pull into a specific path</span>
+<span class="cp">$</span> npx share-env pull <span class="st">apple-brave-cloud#a3f9b2c1...</span> <span class="ky">--file</span> <span class="st">./config/.env.local</span>
+
+<span class="cm"># With a self-hosted relay</span>
+<span class="cp">$</span> npx share-env pull <span class="st">apple-brave-cloud#a3f9b2c1...</span> <span class="ky">--server</span> <span class="st">https://your-relay.example.com</span></div>
+          </div>
+        </div>
+
+        <!-- WORKFLOW -->
+        <div class="doc-section" id="doc-workflow">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Step-by-step workflow
+          </div>
+          <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7;margin-bottom:12px">Full walkthrough for two developers: A has the <code>.env</code>, B just cloned the repo.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">Developer A (sender)</span><button class="cbtn" onclick="cb(this,'cd /path/to/your/project\nnpx share-env push')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Step 1: Navigate to project root</span>
+<span class="cp">$</span> cd /path/to/your/project
+
+<span class="cm"># Step 2: Push the .env file</span>
+<span class="cp">$</span> npx share-env push
+<span style="color:var(--text-muted)">  3 key(s) loaded from .env
+  ...</span>
+  <span style="color:var(--cn)">apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9...</span>
+
+<span class="cm"># Step 3: Send that code to Developer B via Slack / Teams / Signal</span></div>
+          </div>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">Developer B (receiver)</span><button class="cbtn" onclick="cb(this,'cd /path/to/your/project\nnpx share-env pull apple-brave-cloud#a3f9b2c1...')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Step 1: Verify .gitignore protects .env</span>
+<span class="cp">$</span> cat .gitignore | grep .env
+<span style="color:var(--text-muted)">  .env
+  .env.*</span>
+
+<span class="cm"># Step 2: Pull using the share code</span>
+<span class="cp">$</span> npx share-env pull apple-brave-cloud#a3f9b2c1...
+
+<span style="color:var(--ok)">  Done!  .env written to: /path/to/project/.env</span></div>
+          </div>
+        </div>
+
+        <!-- MERGE -->
+        <div class="doc-section" id="doc-merge">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Smart merge conflicts
+          </div>
+          <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7;margin-bottom:12px">If Developer B already has a local <code>.env</code>, the tool compares each key individually. Non-conflicting keys are merged automatically. Conflicts are resolved interactively.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">interactive output</span></div>
+            <div class="ccode" style="color:var(--text-muted)">  Existing .env found &mdash; starting merge...
+
+  Conflict: <span style="color:var(--accent)">DATABASE_URL</span>
+    Local  : <span style="color:var(--warn)">postgres://localhost:5432/mydb</span>
+    Remote : <span style="color:var(--accent-2)">postgres://prod-host:5432/mydb</span>
+  ? Which value do you want to keep?
+    <span style="color:var(--accent)">&gt; Keep local</span>
+      Use remote
+
+  Conflict: <span style="color:var(--accent)">API_KEY</span>
+    Local  : <span style="color:var(--warn)">dev_key_abc123</span>
+    Remote : <span style="color:var(--accent-2)">prod_key_xyz789</span>
+  ? Which value do you want to keep?
+      Keep local
+    <span style="color:var(--accent)">&gt; Use remote</span>
+
+  <span style="color:var(--ok)">Done!  .env written to: /path/to/project/.env</span></div>
+          </div>
+        </div>
+
+        <!-- CUSTOM PATH -->
+        <div class="doc-section" id="doc-custom-path">
+          <div class="doc-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            Custom file paths
+          </div>
+          <p style="font-size:.875rem;color:var(--text-muted);line-height:1.7;margin-bottom:12px">Both <code>push</code> and <code>pull</code> accept a <code>--file</code> flag for non-standard env file locations.</p>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env push --file ./config/.env.staging\nnpx share-env pull <code> --file ./config/.env.staging')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Share a staging env file</span>
+<span class="cp">$</span> npx share-env push <span class="ky">--file</span> <span class="st">./config/.env.staging</span>
+
+<span class="cm"># Pull into a custom location</span>
+<span class="cp">$</span> npx share-env pull <span class="st">apple-brave-cloud#...</span> <span class="ky">--file</span> <span class="st">./config/.env.staging</span>
+
+<span class="cm"># Production env with custom relay</span>
+<span class="cp">$</span> npx share-env push <span class="ky">--file</span> <span class="st">.env.production</span> <span class="ky">--server</span> <span class="st">https://relay.mycompany.com</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+<!-- SECURITY -->
+<section id="security">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">Security</p>
+      <h2 class="st rv d1">Designed to be paranoid.</h2>
+      <p class="ss rv d2">The relay server is architecturally blind. Even if it were fully compromised, an attacker would have only unreadable ciphertext.</p>
+    </div>
+    <div class="sec-grid">
+      <div class="sec-card rv">
+        <div class="sec-card-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+          Encryption flow (local)
+        </div>
+        <div class="sec-steps">
+          <div class="ss-item"><div class="ss-n">1</div><div class="ss-t"><strong>Key generation.</strong> <code>crypto.randomBytes(32)</code> generates a 256-bit key. It lives only in local memory — never written to disk.</div></div>
+          <div class="ss-item"><div class="ss-n">2</div><div class="ss-t"><strong>IV generation.</strong> <code>crypto.randomBytes(12)</code> generates a 96-bit Initialization Vector, making ciphertext unique even for identical inputs.</div></div>
+          <div class="ss-item"><div class="ss-n">3</div><div class="ss-t"><strong>AES-256-GCM encryption.</strong> Produces ciphertext + a 128-bit authentication tag. Any tampering with the ciphertext is detected and rejected at decryption time.</div></div>
+          <div class="ss-item"><div class="ss-n">4</div><div class="ss-t"><strong>Network upload.</strong> Only ciphertext, IV, and auth tag are sent to the relay. <strong style="color:var(--danger)">The 256-bit key never leaves your machine.</strong></div></div>
+          <div class="ss-item"><div class="ss-n">5</div><div class="ss-t"><strong>Share code construction.</strong> <code>phrase#hexKey</code> — the phrase is the relay lookup ID, the key is the 64-char hex decryption key. Both are required.</div></div>
+        </div>
+      </div>
+      <div class="rv d2" style="display:flex;flex-direction:column;gap:20px">
+        <div class="sec-card">
+          <div class="sec-card-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Threat model
+          </div>
+          <table class="threat-tbl">
+            <thead><tr><th>Threat</th><th>Mitigation</th></tr></thead>
+            <tbody>
+              <tr><td class="td-threat">Relay server breached</td><td class="td-mit">Only ciphertext stored — no key, no decryption. <span class="chip ok">Mitigated</span></td></tr>
+              <tr><td class="td-threat">Share code intercepted</td><td class="td-mit">Treat it like a password. Use encrypted channels. <span class="chip warn">User risk</span></td></tr>
+              <tr><td class="td-threat">Wrong person pulls first</td><td class="td-mit">Payload deleted on first pull. Requester can re-push. <span class="chip ok">Mitigated</span></td></tr>
+              <tr><td class="td-threat">Payload left uncollected</td><td class="td-mit">Auto-deleted after 10-minute TTL. <span class="chip ok">Mitigated</span></td></tr>
+              <tr><td class="td-threat">Accidental git commit</td><td class="td-mit">Tool refuses to run if .gitignore doesn't cover .env. <span class="chip ok">Mitigated</span></td></tr>
+              <tr><td class="td-threat">Ciphertext tampered</td><td class="td-mit">GCM auth tag verification fails and rejects silently. <span class="chip ok">Mitigated</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-box tip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span><strong>What the relay sees:</strong> Ciphertext, IV, and auth tag only. The 64-character hex decryption key is never transmitted &mdash; it travels exclusively inside the share code you send manually.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ERROR REFERENCE -->
+<section id="errors">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">Error Reference</p>
+      <h2 class="st rv d1">Know what every error means.</h2>
+      <p class="ss rv d2">Complete reference for all errors, their root causes, and how to fix them.</p>
+    </div>
+    <div class="err-grid rv">
+
+      <div class="err-card open">
+        <div class="err-head" onclick="toggleErr(this)">
+          <span class="err-badge fatal">FATAL</span>
+          <span class="err-title">Your .gitignore does not ignore .env files</span>
+          <span class="err-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="err-body">
+          <p>Your project's <code>.gitignore</code> file either does not exist or does not contain rules to ignore <code>.env</code> and <code>.env.*</code>. This check is deliberate &mdash; it prevents accidental secret commits. Both sender and receiver must pass this check.</p>
+          <ul class="err-causes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>No <code>.gitignore</code> file exists in the project root</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><code>.gitignore</code> exists but is missing the <code>.env</code> entry</li>
+          </ul>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">fix — add to .gitignore</span><button class="cbtn" onclick="cb(this,'.env\n.env.*')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+            <div class="ccode"><span class="cm"># Add these two lines to your .gitignore</span>
+.env
+.env.*</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="err-card">
+        <div class="err-head" onclick="toggleErr(this)">
+          <span class="err-badge fatal">FATAL</span>
+          <span class="err-title">Your .env file contains malformed lines</span>
+          <span class="err-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="err-body">
+          <p>One or more lines in your <code>.env</code> file do not follow the required <code>KEY=VALUE</code> format. Comment lines (starting with <code>#</code>) and blank lines are allowed. Lines without an <code>=</code> separator are not.</p>
+          <ul class="err-causes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>A line exists without an <code>=</code> character (e.g. a stray word or incomplete entry)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Trailing commas or semicolons that break the parser</li>
+          </ul>
+          <div class="cblock">
+            <div class="cblock-head"><span class="cblock-lang">valid .env format</span></div>
+            <div class="ccode"><span class="cm"># Comments are fine</span>
+DATABASE_URL=postgres://localhost:5432/mydb
+API_KEY=your_api_key_here
+DEBUG=true
+
+<span class="cm"># Blank lines are fine too</span>
+SECRET_TOKEN=abc123xyz</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="err-card">
+        <div class="err-head" onclick="toggleErr(this)">
+          <span class="err-badge err">NOT FOUND</span>
+          <span class="err-title">The phrase was not found on the relay server</span>
+          <span class="err-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="err-body">
+          <p>The share code's identifier does not match any active payload on the relay server. This is returned as a 404.</p>
+          <ul class="err-causes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The payload was already pulled by someone (burn-after-reading)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The 10-minute TTL expired before the pull</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The share code was truncated or copied incorrectly</li>
+          </ul>
+          <p style="margin-top:10px"><strong>Fix:</strong> Ask the sender to run <code>npx share-env push</code> again and generate a fresh share code.</p>
+        </div>
+      </div>
+
+      <div class="err-card">
+        <div class="err-head" onclick="toggleErr(this)">
+          <span class="err-badge fatal">FATAL</span>
+          <span class="err-title">DECRYPTION FAILED</span>
+          <span class="err-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="err-body">
+          <p>The AES-256-GCM authentication tag verification failed during decryption. This means the key is wrong, the ciphertext was tampered with, or the share code was truncated.</p>
+          <ul class="err-causes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The key portion (after <code>#</code>) was truncated when copying — it must be exactly 64 hex characters</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The share code was modified in transit (e.g. a chat app wrapped it)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>The ciphertext was tampered with on the relay (GCM detects this)</li>
+          </ul>
+          <p style="margin-top:10px"><strong>Fix:</strong> Ask the sender to re-push and share the complete, unmodified share code. Ensure no chat app is auto-linking or wrapping the code.</p>
+        </div>
+      </div>
+
+      <div class="err-card">
+        <div class="err-head" onclick="toggleErr(this)">
+          <span class="err-badge info">429</span>
+          <span class="err-title">Too many requests — rate limited</span>
+          <span class="err-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="err-body">
+          <p>The relay server enforces a rate limit of 10 requests per minute per IP address to prevent abuse. This error is returned with a 429 HTTP status.</p>
+          <ul class="err-causes">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>You ran push or pull more than 10 times in under a minute</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Multiple team members pushing simultaneously from the same NAT IP</li>
+          </ul>
+          <p style="margin-top:10px"><strong>Fix:</strong> Wait 60 seconds and retry. For teams with high volume, <a href="javascript:void(0)" onclick="scrollTo('#hosting')" style="color:var(--accent)">self-host the relay</a> and increase <code>RATE_LIMIT_MAX</code>.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+<!-- SELF HOSTING -->
+<section id="hosting">
+  <div class="container">
+    <div class="sh">
+      <p class="sl rv">Self-Hosting</p>
+      <h2 class="st rv d1">Full control over your relay.</h2>
+      <p class="ss rv d2">The relay is open source. Deploy it on Render, Railway, Fly.io, or any VPS. The CLI's <code>--server</code> flag points to yours.</p>
+    </div>
+    <div class="host-grid rv">
+      <div class="host-steps">
+        <div class="hs open">
+          <div class="hs-head" onclick="toggleHs(this)">
+            <div class="hs-num">1</div>
+            <div class="hs-title">Clone the repository</div>
+            <div class="hs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+          <div class="hs-body">
+            Clone the env-share monorepo and navigate to it.
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'git clone https://github.com/arjunn881/env-share.git\ncd env-share')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+              <div class="ccode"><span class="cp">$</span> git clone https://github.com/arjunn881/env-share.git
+<span class="cp">$</span> cd env-share</div>
+            </div>
+          </div>
+        </div>
+        <div class="hs">
+          <div class="hs-head" onclick="toggleHs(this)">
+            <div class="hs-num">2</div>
+            <div class="hs-title">Install and build</div>
+            <div class="hs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+          <div class="hs-body">
+            Install all workspace dependencies and compile both TypeScript packages.
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npm install\nnpm run build')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+              <div class="ccode"><span class="cp">$</span> npm install
+<span class="cp">$</span> npm run build</div>
+            </div>
+          </div>
+        </div>
+        <div class="hs">
+          <div class="hs-head" onclick="toggleHs(this)">
+            <div class="hs-num">3</div>
+            <div class="hs-title">Start the relay server</div>
+            <div class="hs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+          <div class="hs-body">
+            Start the relay. Default port is 3000. Override with the <code>PORT</code> env var.
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npm start --workspace=server\nPORT=8080 npm start --workspace=server')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+              <div class="ccode"><span class="cp">$</span> npm start --workspace=server
+<span class="cm"># custom port:</span>
+<span class="cp">$</span> <span class="ky">PORT</span>=8080 npm start --workspace=server</div>
+            </div>
+          </div>
+        </div>
+        <div class="hs">
+          <div class="hs-head" onclick="toggleHs(this)">
+            <div class="hs-num">4</div>
+            <div class="hs-title">Point your CLI at it</div>
+            <div class="hs-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+          </div>
+          <div class="hs-body">
+            Use the <code>--server</code> flag on both <code>push</code> and <code>pull</code>.
+            <div class="cblock">
+              <div class="cblock-head"><span class="cblock-lang">bash</span><button class="cbtn" onclick="cb(this,'npx share-env push --server https://relay.myteam.com\nnpx share-env pull <code> --server https://relay.myteam.com')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</button></div>
+              <div class="ccode"><span class="cp">$</span> npx share-env push <span class="ky">--server</span> <span class="st">https://relay.myteam.com</span>
+<span class="cp">$</span> npx share-env pull <span class="st">&lt;code&gt;</span> <span class="ky">--server</span> <span class="st">https://relay.myteam.com</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div class="server-config">
+          <div class="sc-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93L17.66 6.34M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2"/></svg>
+            Server configuration
+          </div>
+          <table class="sc-table">
+            <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>TTL_SECONDS</td><td>600</td><td>Seconds before uncollected payloads are auto-deleted</td></tr>
+              <tr><td>RATE_LIMIT_MAX</td><td>10</td><td>Max requests per minute per IP address</td></tr>
+              <tr><td>PORT</td><td>3000</td><td>Port the server listens on (set via env var)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="info-box tip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span><strong>Recommended platforms:</strong> Render (free tier), Railway, Fly.io, or any VPS running Node.js 18+. The relay is stateless in-memory &mdash; no database required.</span>
+        </div>
+        <div class="info-box warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>Note:</strong> Self-hosted relay config lives in <code>server/src/index.ts</code>. Restart the server after changing <code>TTL_SECONDS</code> or <code>RATE_LIMIT_MAX</code>.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="foot-logo" href="javascript:void(0)" onclick="scrollTo('#hero')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m9 8-3 4 3 4"/><path d="m15 8 3 4-3 4"/></svg>
+          share-env
+        </a>
+        <p class="foot-desc">End-to-end encrypted .env file sharing for developer teams. No accounts, no risk.</p>
+      </div>
+      <div class="foot-links-group">
+        <div>
+          <div class="flg-title">Navigation</div>
+          <ul class="flg-items">
+            <li><a href="javascript:void(0)" onclick="scrollTo('#how')">How it works</a></li>
+            <li><a href="javascript:void(0)" onclick="scrollTo('#features')">Features</a></li>
+            <li><a href="javascript:void(0)" onclick="scrollTo('#cli')">CLI Docs</a></li>
+            <li><a href="javascript:void(0)" onclick="scrollTo('#security')">Security</a></li>
+            <li><a href="javascript:void(0)" onclick="scrollTo('#errors')">Error Reference</a></li>
+            <li><a href="javascript:void(0)" onclick="scrollTo('#hosting')">Self-hosting</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="flg-title">Resources</div>
+          <ul class="flg-items">
+            <li><a href="https://www.npmjs.com/package/share-env" target="_blank" rel="noopener">npm package</a></li>
+            <li><a href="https://github.com/arjunn881/env-share" target="_blank" rel="noopener">GitHub repo</a></li>
+            <li><a href="https://github.com/arjunn881/env-share/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></li>
+            <li><a href="https://env-share-1rsi.onrender.com" target="_blank" rel="noopener">Default relay</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span class="foot-copy">MIT License &mdash; Open source, no warranties. Built for developers who care about security.</span>
+      <div class="foot-badges">
+        <span class="fbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>AES-256-GCM</span>
+        <span class="fbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>Burn-after-read</span>
+        <span class="fbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>Open source</span>
+        <span class="fbadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Node.js 18+</span>
+      </div>
+    </div>
+  </div>
+</footer>
+<script>
+// ── TERMINAL ──
+const lines = [
+  {t:'cmd', s:'npx share-env push'},
+  {t:'o',   s:'  Checking .gitignore...'},
+  {t:'o',   s:'  Validating .env format...'},
+  {t:'o',   s:'  3 key(s) loaded from .env'},
+  {t:'o',   s:'  Generating AES-256-GCM key...'},
+  {t:'o',   s:'  Encrypting payload locally...'},
+  {t:'o',   s:'  Uploading to relay...'},
+  {t:'ok',  s:'  Payload uploaded. Your share code:'},
+  {t:'box', s:'  apple-brave-cloud#a3f9b2c1d4e5f6a7b8c9d0e1f2a3b4c5'},
+  {t:'o',   s:''},
+  {t:'w',   s:'  Expires in 10 minutes. One-time use.'},
+  {t:'gap', s:''},
+  {t:'cmd', s:'npx share-env pull apple-brave-cloud#a3f9...'},
+  {t:'o',   s:'  Checking .gitignore...'},
+  {t:'o',   s:'  Fetching from relay server...'},
+  {t:'o',   s:'  Decrypting payload locally...'},
+  {t:'o',   s:'  Merging into .env...'},
+  {t:'ok',  s:'  Done!  .env written to: /project/.env'},
+  {t:'cur', s:''},
+];
+let li=0,tid=null;
+const tb=document.getElementById('term-body');
+function addLine(l){
+  const el=document.createElement('div');
+  if(l.t==='cmd'){el.className='tl';el.innerHTML='<span class="tp">$</span><span class="tc"> '+l.s+'</span>';}
+  else if(l.t==='ok'){el.className='to ts';el.textContent=l.s;}
+  else if(l.t==='w'){el.className='to tw';el.textContent=l.s;}
+  else if(l.t==='e'){el.className='to te';el.textContent=l.s;}
+  else if(l.t==='box'){el.className='tb';el.textContent=l.s;}
+  else if(l.t==='gap'){el.style.marginTop='10px';}
+  else if(l.t==='cur'){el.className='tl';el.innerHTML='<span class="tp">$</span><span class="blink"></span>';}
+  else{el.className='to';el.textContent=l.s;}
+  tb.appendChild(el);tb.scrollTop=tb.scrollHeight;
+}
+function runTerm(){
+  if(li>=lines.length)return;
+  addLine(lines[li++]);
+  const d=lines[li-1].t==='cmd'?520:lines[li-1].t==='gap'?380:115;
+  tid=setTimeout(runTerm,d);
+}
+function startTerm(){if(tid)clearTimeout(tid);tb.innerHTML='';li=0;setTimeout(runTerm,600);}
+
+// ── REVEAL ──
+const ro=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');ro.unobserve(e.target);}}),{threshold:.1});
+document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+
+// Hero terminal trigger
+const ho=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){startTerm();ho.unobserve(e.target);}}),{threshold:.25});
+ho.observe(document.getElementById('hero'));
+
+// ── SMOOTH SCROLL HELPER (fixes file:// same-origin warning) ──
+function scrollTo(id){
+  var el=document.querySelector(id);
+  if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ── NAV SCROLL ──
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',scrollY>50);});
+
+// ── COPY NPX ──
+function copyNpx(){
+  navigator.clipboard.writeText('npx share-env push').then(()=>{
+    const t=document.getElementById('npx-toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+  });
+}
+
+// ── CODE COPY ──
+function cb(btn,text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.innerHTML;
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    btn.classList.add('ok');
+    setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove('ok');},2000);
+  });
+}
+
+// ── ERROR ACCORDION ──
+function toggleErr(head){head.closest('.err-card').classList.toggle('open');}
+
+// ── HOSTING ACCORDION ──
+function toggleHs(head){head.closest('.hs').classList.toggle('open');}
+
+// ── DOC NAV ACTIVE ──
+const docSections=document.querySelectorAll('.doc-section');
+const docLinks=document.querySelectorAll('.doc-nav-items a');
+if(docSections.length&&docLinks.length){
+  const docObs=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        docLinks.forEach(l=>l.classList.remove('active'));
+        const active=document.querySelector('.doc-nav-items a[href="#'+e.target.id+'"]');
+        if(active)active.classList.add('active');
+      }
+    });
+  },{threshold:.5,rootMargin:'-80px 0px -60% 0px'});
+  docSections.forEach(s=>docObs.observe(s));
+}
+</script>
+</body>
+</html>
