@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="404 — Page Not Found"
+  description="The page you are looking for does not exist or has been moved. Explore share-env documentation, CLI reference, security model, and guides."
+  noindex={true}
+>
+  <div class="container" style="min-height: calc(100vh - var(--nav-h) - 300px); display: flex; flex-direction: column; justify-content: center; padding-top: 60px; padding-bottom: 80px;">
+    
+    <div style="max-width: 760px; margin: 0 auto; width: 100%; text-align: center;">
+      
+      <!-- Status pill -->
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.25); color: var(--danger); padding: 5px 14px; border-radius: 100px; font-size: .75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px;">
+        <span style="width: 7px; height: 7px; background: var(--danger); border-radius: 50%;"></span>
+        HTTP 404 &nbsp;&middot;&nbsp; Payload Missing
+      </div>
+
+      <h1 style="font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 900; line-height: 1; letter-spacing: -3px; margin-bottom: 16px;">
+        404 <span class="grad">Not Found</span>
+      </h1>
+
+      <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto 36px; line-height: 1.7;">
+        The page you requested doesn't exist, has been burned after reading, or has expired its 10-minute TTL.
+      </p>
+
+      <!-- Terminal Mockup -->
+      <div style="text-align: left; background: #020710; border: 1px solid rgba(244,63,94,0.3); border-radius: var(--r-lg); overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,0.6); margin-bottom: 48px;">
+        <div style="background: rgba(255,255,255,0.03); padding: 11px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);">
+          <div style="display: flex; gap: 6px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #ff5f57;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #ffbd2e;"></span>
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #28c840;"></span>
+          </div>
+          <span style="font-size: .68rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">zsh — share-env</span>
+        </div>
+        <div style="padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: .82rem; line-height: 1.8;">
+          <div style="color: var(--text-muted);"><span style="color: var(--accent);">$</span> npx share-env pull route-404</div>
+          <div style="color: var(--danger); margin-top: 4px;">✖ Error: 404 Not Found — Key 'route-404' does not exist on relay server</div>
+          <div style="color: var(--warn);">➜ Reason: Either burned after first pull or URL has moved.</div>
+          <div style="color: var(--text-dim); margin-top: 8px;">// Recommended action: return to home or explore CLI docs</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 56px;">
+        <a class="btn btn-p" href="/">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Back to Home
+        </a>
+        <a class="btn btn-s" href="/docs">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          CLI Reference (Docs)
+        </a>
+        <a class="btn btn-s" href="/errors">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Error Reference
+        </a>
+      </div>
+
+      <!-- Helpful Links Grid -->
+      <div style="text-align: left; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 28px; backdrop-filter: blur(14px);">
+        <div style="font-size: .75rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px;">
+          Popular Destinations
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+          <a href="/how-it-works" style="display: block; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--text); transition: all .2s;">
+            <div style="font-weight: 600; font-size: .88rem; color: var(--accent);">How It Works →</div>
+            <div style="font-size: .76rem; color: var(--text-muted); margin-top: 4px;">Zero-knowledge relay lifecycle</div>
+          </a>
+          <a href="/security" style="display: block; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--text); transition: all .2s;">
+            <div style="font-weight: 600; font-size: .88rem; color: var(--accent-2);">Security Model →</div>
+            <div style="font-size: .76rem; color: var(--text-muted); margin-top: 4px;">AES-256-GCM specs</div>
+          </a>
+          <a href="/compare" style="display: block; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--text); transition: all .2s;">
+            <div style="font-weight: 600; font-size: .88rem; color: var(--accent-3);">Compare Tools →</div>
+            <div style="font-size: .76rem; color: var(--text-muted); margin-top: 4px;">share-env vs Slack/Email</div>
+          </a>
+          <a href="/self-host" style="display: block; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; color: var(--text); transition: all .2s;">
+            <div style="font-weight: 600; font-size: .88rem; color: var(--warn);">Self-Hosting →</div>
+            <div style="font-size: .76rem; color: var(--text-muted); margin-top: 4px;">Deploy custom relay</div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</Base>

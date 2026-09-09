@@ -27,6 +27,9 @@ https://share-env.pages.dev/*
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
+/sitemap.xml
+  Cache-Control: public, max-age=86400
+
 /sitemap-index.xml
   Cache-Control: public, max-age=86400
 

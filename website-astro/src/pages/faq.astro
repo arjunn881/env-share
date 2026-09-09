@@ -2,40 +2,227 @@
 import Base from '../layouts/Base.astro';
 import AdSlot from '../components/AdSlot.astro';
 
-const faqs = [
-  { q: 'What is share-env?', a: 'share-env is a free, open-source CLI tool that lets developers securely share .env files using AES-256-GCM encryption. It works via npx — no installation or account needed. Run npx share-env push to share, and npx share-env pull <code> to receive.' },
-  { q: 'What is a .env file?', a: 'A .env file (dotenv file) is a plain-text configuration file that stores environment variables such as API keys, database URLs, and secrets. It is read by applications at startup and should never be committed to version control or shared in plain text.' },
-  { q: 'How do I share a .env file securely?', a: 'The safest way to share a .env file is to use an end-to-end encrypted tool like share-env. Run npx share-env push in your project directory, then send the generated share code to your teammate. They run npx share-env pull <code> to receive and decrypt it locally. The relay server never sees the decryption key.' },
-  { q: 'Is it safe to share .env files on Slack?', a: 'No. Sharing .env files on Slack is dangerous because messages are permanently logged, searchable by workspace admins, and accessible if the workspace is breached. Use an encrypted, burn-after-reading tool like share-env instead.' },
-  { q: 'What encryption does share-env use?', a: 'share-env uses AES-256-GCM (Advanced Encryption Standard, 256-bit key, Galois/Counter Mode). This provides both confidentiality and authentication — any tampering with the ciphertext is detected and rejected. The 256-bit key is generated locally and never transmitted to the relay server.' },
-  { q: 'What is a zero-knowledge relay server?', a: 'A zero-knowledge relay server stores only encrypted ciphertext and has no access to the decryption key. In share-env, the 64-character hex key is embedded in the share code and travels only through the channel you choose (e.g. Slack message). The relay server cannot decrypt what it stores.' },
-  { q: 'How long does a share-env payload last?', a: 'By default, share-env payloads expire after 10 minutes (600 seconds). If no one pulls the payload within that time, it is automatically and permanently deleted. This is the burn-after-reading TTL.' },
-  { q: 'Can a share-env payload be pulled more than once?', a: 'No. share-env is burn-after-reading. The payload is permanently deleted from the relay server the moment it is pulled for the first time. If you try to pull the same share code twice, you will get a 404 error.' },
-  { q: 'Do I need an account to use share-env?', a: 'No. share-env requires zero accounts, zero configuration, and zero API keys. Simply run npx share-env push in any project with Node.js 18+ and a .gitignore that covers .env files.' },
-  { q: 'What is the share-env share code format?', a: 'A share-env share code has the format phrase#hexKey, for example: apple-brave-cloud#a3f9b2c1d4e5.... The 3-word phrase is the relay lookup ID. The 64-character hex string after # is the AES-256-GCM decryption key. Both parts are required to decrypt the payload.' },
-  { q: 'What does npx share-env push do?', a: 'The push command reads your .env file, validates it, checks that .gitignore ignores .env, generates a random 256-bit key and 96-bit IV, encrypts the file with AES-256-GCM, uploads only the ciphertext to the relay server, and returns a one-time share code.' },
-  { q: 'What does npx share-env pull do?', a: 'The pull command takes a share code, extracts the relay lookup phrase and decryption key, fetches the encrypted payload from the relay server, decrypts it locally using AES-256-GCM, and writes the result to your .env file. The payload is deleted from the relay immediately after download.' },
-  { q: 'Can I share a file other than .env?', a: 'Yes. Use the --file flag: npx share-env push --file .env.staging to share a staging environment file, and npx share-env pull <code> --file .env.staging to receive it.' },
-  { q: 'Can I self-host the share-env relay server?', a: 'Yes. The relay server is open source and can be self-hosted on any Node.js 18+ host (Render, Railway, Fly.io, VPS). Clone the GitHub repo, run npm install and npm start, then point your CLI at it with the --server flag.' },
-  { q: 'What happens if the .env file already exists when I pull?', a: 'share-env compares the incoming .env with your existing one key-by-key. For any conflicting keys, it shows both values interactively and asks whether to keep the local or use the remote value — a smart merge flow.' },
-  { q: 'Why does share-env require .gitignore to cover .env?', a: 'This is a mandatory guardrail. share-env refuses to run (push or pull) if your .gitignore does not explicitly ignore .env and .env.* — preventing accidental commits of secrets to version control. This is not optional and cannot be disabled.' },
-  { q: 'What is the difference between .env and dotenv?', a: '.env is the filename (a hidden file starting with a dot). Dotenv is the convention of storing environment variables in .env files, popularized by the dotenv npm package which loads .env files into process.env in Node.js applications.' },
-  { q: 'Is share-env free and open source?', a: 'Yes. share-env is 100% free and MIT licensed. The source code is publicly available at github.com/arjunn881/env-share. The default relay server is provided free of charge with no usage limits (subject to rate limiting).' },
-  { q: 'What Node.js version does share-env require?', a: 'share-env requires Node.js 18 or higher. This is because it uses the built-in crypto module with AES-256-GCM support that was stabilized in Node.js 18+.' },
-  { q: 'How is share-env different from sharing .env on Slack or email?', a: 'On Slack and email, secrets are stored in plaintext forever with no expiry. share-env encrypts before upload, the relay sees only ciphertext, the payload self-destructs after one pull or 10 minutes, and the decryption key never touches the server — it only travels in the share code you control.' },
+// All FAQ entries — deduplicated & categorised
+const faqGroups = [
+  {
+    heading: 'What is dotenv and .env files?',
+    slug: 'dotenv-basics',
+    icon: 'file',
+    items: [
+      {
+        q: 'What is dotenv used for?',
+        a: 'dotenv is a Node.js package (and a broader convention) that loads environment variables from a <code>.env</code> file into <code>process.env</code> at runtime. Developers use it to keep secrets like API keys, database URLs, and service credentials out of source code, making apps more secure and portable across environments.',
+      },
+      {
+        q: 'What is the .env file?',
+        a: 'A <code>.env</code> file (pronounced "dot env") is a plain-text configuration file that stores key=value pairs of environment variables. For example: <code>DATABASE_URL=postgres://...</code> or <code>API_KEY=sk-abc123</code>. Applications read this file at startup to configure themselves without hardcoding secrets.',
+      },
+      {
+        q: 'What does an .env file do?',
+        a: 'An <code>.env</code> file supplies environment-specific configuration variables to an application. This means you can use different values (e.g., development vs. production database URLs) simply by swapping the <code>.env</code> file, without changing any code. It separates configuration from code — a best practice known as the twelve-factor app methodology.',
+      },
+      {
+        q: 'What is npm dotenv?',
+        a: 'npm dotenv refers to the dotenv package on npm. It is one of the most downloaded npm packages of all time, with over 40 million weekly downloads. It reads a <code>.env</code> file in the current directory and sets the key=value pairs as environment variables accessible via <code>process.env</code> in Node.js.',
+      },
+      {
+        q: 'What is dotenv in npm?',
+        a: 'In npm (Node Package Manager), dotenv is a lightweight zero-dependency package that auto-loads a <code>.env</code> file from your project root into <code>process.env</code>. Install it with <code>npm install dotenv</code>, then call <code>require("dotenv").config()</code> at the start of your app. It is available at <a href="https://www.npmjs.com/package/dotenv" rel="noopener">npmjs.com/package/dotenv</a>.',
+      },
+      {
+        q: 'What is the difference between .env and dotenv?',
+        a: '<code>.env</code> is a filename — a hidden file starting with a dot. Dotenv is the convention of storing environment variables in <code>.env</code> files, popularised by the dotenv npm package. The package reads the file and populates <code>process.env</code> in Node.js. Other languages have equivalent libraries: <code>python-dotenv</code> for Python, <code>godotenv</code> for Go, etc.',
+      },
+    ],
+  },
+  {
+    heading: 'Is dotenv still relevant?',
+    slug: 'dotenv-relevance',
+    icon: 'refresh',
+    items: [
+      {
+        q: 'Is dotenv still used?',
+        a: 'Yes — dotenv is still widely used, downloaded over 40 million times per week on npm. While modern runtimes like Node.js 20.6+ have native <code>--env-file</code> support, the dotenv package remains dominant because of ecosystem inertia, broad tooling support (Vite, Next.js, etc.), and cross-runtime compatibility.',
+      },
+      {
+        q: 'Is dotenv needed anymore?',
+        a: 'dotenv is no longer strictly required if you use Node.js 20.6+ (which supports <code>node --env-file=.env app.js</code> natively) or modern frameworks that handle env loading automatically (Next.js, Vite, Remix). However, for Node.js below 20.6, for explicit <code>process.env</code> access, or for portability across many tools, dotenv remains the de-facto standard.',
+      },
+      {
+        q: 'Is dotenv built into Python?',
+        a: 'No, dotenv is not part of the Python standard library. You need to install the <code>python-dotenv</code> package: <code>pip install python-dotenv</code>. Then import it with <code>from dotenv import load_dotenv; load_dotenv()</code>. Python 3.11+ added <code>tomllib</code> but no native <code>.env</code> file support.',
+      },
+      {
+        q: 'Is NodeJS using TypeScript?',
+        a: 'Node.js (the runtime) is written in C++ and JavaScript. TypeScript is a typed superset of JavaScript that compiles to JavaScript. You can write your Node.js application in TypeScript — use <code>ts-node</code>, <code>tsx</code>, or compile with <code>tsc</code> first. dotenv works seamlessly with TypeScript: <code>import dotenv from "dotenv"; dotenv.config();</code>.',
+      },
+    ],
+  },
+  {
+    heading: 'How to use dotenv in Node.js',
+    slug: 'nodejs-dotenv',
+    icon: 'settings',
+    items: [
+      {
+        q: 'How do I install dotenv using npm?',
+        a: 'Run <code>npm install dotenv</code> in your project directory. For development-only use (since Node.js 20.6+ loads <code>.env</code> natively in production), you can use <code>npm install --save-dev dotenv</code>. After installation, call <code>require("dotenv").config()</code> or <code>import "dotenv/config"</code> at the top of your entry file.',
+      },
+      {
+        q: 'How do I install dotenv?',
+        a: 'You can install dotenv with npm (<code>npm install dotenv</code>), yarn (<code>yarn add dotenv</code>), or pnpm (<code>pnpm add dotenv</code>). For Python, run <code>pip install python-dotenv</code>. After installation, call <code>dotenv.config()</code> (Node.js) or <code>load_dotenv()</code> (Python) before accessing environment variables.',
+      },
+      {
+        q: 'How do I install Node.js and npm?',
+        a: 'Download Node.js from nodejs.org — npm is bundled automatically. Alternatively use a version manager: nvm (macOS/Linux) or nvm-windows for Windows. After installing Node.js, run <code>node -v</code> and <code>npm -v</code> to verify. Then install dotenv with <code>npm install dotenv</code>.',
+      },
+      {
+        q: 'How do you use dotenv?',
+        a: '1. Install: <code>npm install dotenv</code>. 2. Create a <code>.env</code> file with <code>PORT=3000</code> and <code>API_KEY=abc123</code>. 3. Load it at the top of your entry file: <code>require("dotenv").config();</code> (CommonJS) or <code>import "dotenv/config";</code> (ESM). 4. Access variables: <code>process.env.PORT</code>.',
+      },
+      {
+        q: 'How do I use dotenv in Node?',
+        a: 'In Node.js (CommonJS): add <code>require("dotenv").config()</code> at the very top of your entry file before any other imports. In ESM projects, import with <code>import "dotenv/config"</code> as the first import. Alternatively (Node.js 20.6+) skip dotenv entirely and launch with <code>node --env-file=.env server.js</code>.',
+      },
+      {
+        q: 'How to use dotenv in Node.js?',
+        a: 'Install dotenv with <code>npm i dotenv</code>. In CommonJS: use <code>require("dotenv").config()</code> before accessing <code>process.env</code>. In ES Modules: use <code>import "dotenv/config"</code> as the first import. Your <code>.env</code> file in the project root should have one <code>KEY=value</code> pair per line.',
+      },
+      {
+        q: 'How to load .env in Node.js?',
+        a: 'Several ways to load a <code>.env</code> file in Node.js: (1) <code>require("dotenv").config()</code> with the dotenv package. (2) <code>node --env-file=.env app.js</code> (Node.js 20.6+ native). (3) <code>import "dotenv/config"</code> for ESM. (4) Some frameworks (Next.js, Vite, Remix) load <code>.env</code> automatically with no extra setup.',
+      },
+      {
+        q: 'How can I use .env files in Python?',
+        a: 'Install python-dotenv: <code>pip install python-dotenv</code>. Then at the top of your Python script: <code>from dotenv import load_dotenv; import os; load_dotenv(); api_key = os.getenv("API_KEY")</code>. If using Django, call <code>load_dotenv()</code> before <code>django.setup()</code>. The <code>.env</code> file format is the same: <code>API_KEY=value</code>.',
+      },
+    ],
+  },
+  {
+    heading: 'How to share a .env file',
+    slug: 'sharing-env',
+    icon: 'share',
+    items: [
+      {
+        q: 'How do I share a .env file?',
+        a: 'The safest way to share a <code>.env</code> file is using an end-to-end encrypted tool like share-env. Run <code>npx share-env push</code> in your project directory, then send the generated share code to your teammate. They run <code>npx share-env pull &lt;code&gt;</code> to receive and decrypt it locally. Never share <code>.env</code> files over Slack, email, or chat — they expose secrets in plaintext.',
+      },
+      {
+        q: 'How to share .env with team?',
+        a: 'Best practices for sharing <code>.env</code> with a team: (1) Use share-env for one-time, encrypted transfers — no accounts needed, burn-after-reading. (2) Use a secrets manager (Doppler, HashiCorp Vault, AWS Secrets Manager) for long-term team-wide secrets. (3) Never use version control, Slack, or email. (4) Commit a <code>.env.example</code> with placeholder values as a template.',
+      },
+      {
+        q: 'How do I send a .env file?',
+        a: 'Send a <code>.env</code> file securely using <code>npx share-env push</code>. This encrypts the file with AES-256-GCM before uploading to a relay server, then gives you a one-time share code. The recipient runs <code>npx share-env pull &lt;code&gt;</code>. The payload self-destructs after being pulled or after 10 minutes. The relay server never sees the decryption key.',
+      },
+      {
+        q: 'How do I export an env file?',
+        a: 'To export/share your <code>.env</code> file to a teammate: use <code>npx share-env push</code> (encrypts and uploads), or export to shell variables with <code>export $(cat .env | xargs)</code> (Linux/macOS) for local use only. For CI/CD, configure secrets through your platform\'s secrets UI (GitHub Actions Secrets, Vercel Environment Variables) — never commit <code>.env</code> to git.',
+      },
+      {
+        q: 'How do I import a .env file?',
+        a: 'To import a received <code>.env</code> file using share-env: run <code>npx share-env pull &lt;share-code&gt;</code> — it decrypts and writes the file to your project root. To manually import in Node.js: call <code>require("dotenv").config({ path: "./path/to/.env" })</code>. In shell: use <code>source .env</code> or <code>set -a; source .env; set +a</code>.',
+      },
+      {
+        q: "Why don't we push .env files to git?",
+        a: '<code>.env</code> files contain secrets — API keys, database passwords, OAuth tokens. Pushing them to git (especially public repos) permanently exposes those secrets. Even deleted secrets remain in git history and can be extracted. Secret scanners (GitHub, GitGuardian) will flag and may revoke exposed credentials automatically. Always add <code>.env</code> and <code>.env.*</code> to your <code>.gitignore</code>.',
+      },
+      {
+        q: 'Can I encrypt a .env file?',
+        a: 'Yes. share-env encrypts your <code>.env</code> file using AES-256-GCM (the same cipher used by TLS 1.3). The encryption key is generated locally and never sent to the relay server — it only travels in the share code you control. Other options include <code>git-secret</code>, <code>sops</code>, or GPG encryption, but these require key management setup.',
+      },
+    ],
+  },
+  {
+    heading: 'Working with .env files',
+    slug: 'env-operations',
+    icon: 'tool',
+    items: [
+      {
+        q: 'How do I create a .env file?',
+        a: 'Create a <code>.env</code> file in the root of your project: on Linux/macOS run <code>touch .env</code>, on Windows run <code>type nul > .env</code> or create it in your editor. Format: one <code>KEY=value</code> pair per line. No quotes around values (unless they contain spaces). No spaces around <code>=</code>. Add <code>.env</code> to <code>.gitignore</code> immediately.',
+      },
+      {
+        q: 'How do I access the .env file?',
+        a: 'After loading dotenv (<code>require("dotenv").config()</code>), access variables via <code>process.env.VARIABLE_NAME</code> in Node.js, <code>os.getenv("VARIABLE_NAME")</code> in Python, or <code>$_ENV["VARIABLE_NAME"]</code> in PHP. On Linux/macOS you can also source the file: <code>source .env</code> to make variables available in the current shell session.',
+      },
+      {
+        q: 'Where do I find the .env file?',
+        a: 'The <code>.env</code> file lives in the root directory of your project (same level as <code>package.json</code>, <code>pyproject.toml</code>, etc.). It is a hidden file (starts with a dot) — your file manager may not show it by default. Enable "show hidden files" in your OS or editor. In VS Code it always shows. On macOS: Cmd+Shift+. to toggle hidden files in Finder.',
+      },
+      {
+        q: 'How to config .env file?',
+        a: 'Configure your <code>.env</code> file by adding <code>KEY=value</code> pairs, one per line. Example: <code>NODE_ENV=development</code>, <code>PORT=3000</code>, <code>DATABASE_URL=postgres://user:pass@localhost/db</code>, <code>API_KEY=your-key-here</code>. Use a <code>.env.example</code> with placeholder values (committed to git) as a team template. Load with <code>require("dotenv").config()</code>.',
+      },
+    ],
+  },
+  {
+    heading: 'share-env specific questions',
+    slug: 'share-env',
+    icon: 'lock',
+    items: [
+      {
+        q: 'What is share-env?',
+        a: 'share-env is a free, open-source CLI tool that lets developers securely share <code>.env</code> files using AES-256-GCM encryption. It works via npx — no installation or account needed. Run <code>npx share-env push</code> to share, and <code>npx share-env pull &lt;code&gt;</code> to receive. Payloads are burn-after-reading and self-destruct after 10 minutes.',
+      },
+      {
+        q: 'What encryption does share-env use?',
+        a: 'share-env uses AES-256-GCM (Advanced Encryption Standard, 256-bit key, Galois/Counter Mode). This provides both confidentiality and integrity authentication — any tampering with the ciphertext is detected and rejected. The 256-bit key is generated locally and never transmitted to the relay server.',
+      },
+      {
+        q: 'Do I need an account to use share-env?',
+        a: 'No. share-env requires zero accounts, zero configuration, and zero API keys. Simply run <code>npx share-env push</code> in any project with Node.js 18+ and a <code>.gitignore</code> that covers <code>.env</code> files. No login, no signup, no tracking.',
+      },
+      {
+        q: 'Can a share-env payload be pulled more than once?',
+        a: 'No. share-env is burn-after-reading. The payload is permanently deleted from the relay server the moment it is pulled for the first time. If you try to pull the same share code twice, you will get a 404 error. This prevents accidental or malicious re-access.',
+      },
+      {
+        q: 'How long does a share-env payload last?',
+        a: 'By default, share-env payloads expire after 10 minutes (600 seconds). If no one pulls the payload within that time, it is automatically and permanently deleted from the relay server. This TTL significantly limits the attack surface.',
+      },
+      {
+        q: 'Can I self-host the share-env relay server?',
+        a: 'Yes. The relay server is open source and can be self-hosted on any Node.js 18+ host (Render, Railway, Fly.io, VPS). Clone the GitHub repo, run <code>npm install &amp;&amp; npm start</code>, then point your CLI at it with the <code>--server</code> flag.',
+      },
+      {
+        q: 'Is share-env free and open source?',
+        a: 'Yes. share-env is 100% free and MIT licensed. The source code is publicly available on GitHub. The default relay server is provided free of charge with no usage limits (subject to rate limiting to prevent abuse).',
+      },
+    ],
+  },
 ];
 
-const faqSchemaData = faqs.map(f => ({ q: f.q, a: f.a }));
+// Flatten all FAQ items for JSON-LD schema (strip HTML tags for plain text)
+const allFaqs = faqGroups.flatMap(g => g.items);
+const faqSchemaData = allFaqs.map(f => ({
+  q: f.q,
+  a: f.a.replace(/<[^>]*>/g, ''),
+}));
+
+const kwCloud = [
+  '.env', 'dotenv', 'dot env', 'share env', 'env share', 'share .env',
+  '.env file sharing', '.env file share', 'dot env file share', 'share dot env file',
+  'safely share dot env file', '.env file share safely', 'secure dotenv sharing',
+  'encrypted env sharing', 'npx share-env', 'share-env cli', 'env file encryption',
+  'zero knowledge env sharing', 'burn after reading env', 'ephemeral env sharing',
+  'how to share .env with team', 'share .env securely', '.env team sharing',
+  'install dotenv npm', 'how to use dotenv', 'dotenv nodejs', 'dotenv python',
+  'load .env nodejs', '.env file what is it', 'create .env file', 'env file secrets',
+  'npm dotenv package', 'dotenv config', 'push .env git danger', 'encrypt .env file',
+];
+
 ---
 
 <Base
-  title="FAQ — Frequently Asked Questions About share-env and .env File Sharing"
-  description="Answers to the most common questions about share-env, .env file sharing, dotenv security, AES-256-GCM encryption, zero-knowledge relays, and more."
-  keywords="share env faq, dotenv questions, .env file sharing how to, share .env securely faq, npx share-env help, dotenv security questions, .env file encryption faq, share dot env file faq"
+  title="FAQ — Dotenv, .env File Sharing & share-env Questions Answered"
+  description="Comprehensive FAQ covering dotenv usage, .env file sharing, how to share .env with your team securely, how to use dotenv in Node.js and Python, and everything about share-env."
+  keywords="dotenv faq, .env file questions, share .env file, how to share .env with team, dotenv nodejs, dotenv python, install dotenv npm, share env faq, dot env faq, share dot env file, env file sharing safely, npx share-env, dotenv is still used, load .env nodejs, create .env file, .env file what is it"
   faqSchema={faqSchemaData}
   pageType="FAQPage"
 >
   <div class="container">
+
+    <!-- Hero -->
     <div class="page-hero">
       <nav aria-label="Breadcrumb" class="breadcrumb">
         <a href="/">Home</a>
@@ -44,58 +231,112 @@ const faqSchemaData = faqs.map(f => ({ q: f.q, a: f.a }));
       </nav>
       <p class="sl">FAQ</p>
       <h1>Frequently Asked Questions</h1>
-      <p class="desc">Everything you need to know about <strong>secure .env file sharing</strong>, <strong>dotenv encryption</strong>, and how share-env works.</p>
-    </div>
+      <p class="desc">Everything developers need to know about <strong>dotenv</strong>, <strong>.env file sharing</strong>, and how <strong>share-env</strong> keeps your secrets safe — with actionable, copy-ready answers.</p>
 
-    <!-- Quick answer boxes for AEO/featured snippets -->
-    <section style="padding-top:0;">
-      <div class="sh">
-        <p class="sl rv">Quick Answers</p>
-        <h2 class="st rv d1">The most important answers, first.</h2>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px;" class="rv">
-        {faqs.slice(0,4).map(f => (
-          <div class="answer-box">
-            <div class="ab-q">{f.q}</div>
-            <div class="ab-a">{f.a}</div>
-          </div>
+      <!-- Quick-jump pills -->
+      <div class="faq-jumps rv" role="navigation" aria-label="Jump to FAQ section">
+        {faqGroups.map((g, i) => (
+          <a href={`#faq-group-${i}`} class="jump-pill">
+            <span class="jp-icon" aria-hidden="true">
+              {g.icon === 'file' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+              {g.icon === 'refresh' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}
+              {g.icon === 'settings' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>}
+              {g.icon === 'share' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>}
+              {g.icon === 'tool' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>}
+              {g.icon === 'lock' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>}
+            </span>
+            <span>{g.heading}</span>
+          </a>
         ))}
       </div>
-    </section>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="faq-stats rv">
+      <div class="stat-item">
+        <span class="stat-num">{allFaqs.length}</span>
+        <span class="stat-label">Questions answered</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">{faqGroups.length}</span>
+        <span class="stat-label">Topic categories</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">JSON-LD</span>
+        <span class="stat-label">Schema.org FAQPage</span>
+      </div>
+    </div>
 
     <AdSlot slot={undefined} />
 
-    <!-- Full FAQ accordion -->
-    <section>
-      <div class="sh">
-        <p class="sl rv">All Questions</p>
-        <h2 class="st rv d1">20 questions about <span class="grad">.env file sharing</span>.</h2>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;" class="rv">
-        {faqs.map((faq, i) => (
-          <div class={`acc-item${i < 4 ? ' open' : ''}`}>
-            <div class="acc-head" onclick="toggleAcc(this)">
-              <span style="font-size:.82rem;font-weight:700;color:var(--text);flex:1;line-height:1.45;">{faq.q}</span>
-              <span class="acc-chev">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
+    <!-- FAQ Groups -->
+    {faqGroups.map((group, gi) => (
+      <section id={`faq-group-${gi}`} class="faq-group">
+        <div class="sh">
+          <p class="sl rv" style="display:flex;align-items:center;gap:6px;">
+            <span class="sec-icon" aria-hidden="true">
+              {group.icon === 'file' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+              {group.icon === 'refresh' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>}
+              {group.icon === 'settings' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>}
+              {group.icon === 'share' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>}
+              {group.icon === 'tool' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>}
+              {group.icon === 'lock' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>}
+            </span>
+            {group.heading}
+          </p>
+          <h2 class="st rv d1">{group.heading}</h2>
+        </div>
+
+        <div class="faq-accordion rv" itemscope itemtype="https://schema.org/FAQPage">
+          {group.items.map((faq, fi) => (
+            <div
+              class={`acc-item${fi === 0 ? ' open' : ''}`}
+              itemscope
+              itemprop="mainEntity"
+              itemtype="https://schema.org/Question"
+            >
+              <div
+                class="acc-head"
+                onclick="toggleAcc(this)"
+                role="button"
+                tabindex="0"
+                aria-expanded={fi === 0 ? 'true' : 'false'}
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleAcc(this);}"
+              >
+                <span class="acc-q-num" aria-hidden="true">{gi + 1}.{fi + 1}</span>
+                <span class="acc-q-text" itemprop="name">{faq.q}</span>
+                <span class="acc-chev" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="6 9 12 15 18 9"/></svg>
+                </span>
+              </div>
+              <div class="acc-body" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+                <p class="acc-answer" itemprop="text" set:html={faq.a} />
+              </div>
             </div>
-            <div class="acc-body">
-              <p style="font-size:.875rem;color:var(--text-muted);line-height:1.72;" itemprop="text">{faq.a}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    <AdSlot slot={undefined} />
 
     <!-- Keyword cloud for programmatic SEO -->
-    <section style="padding-top:0;">
+    <section aria-label="Related topics">
+      <div class="sh">
+        <p class="sl rv" style="display:flex;align-items:center;gap:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Related Topics
+        </p>
+        <h2 class="st rv d1">Explore related <span class="grad">.env</span> concepts</h2>
+      </div>
       <div class="info-box tip rv">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <div>
-          <strong>Related topics:</strong>
-          <div style="margin-top:8px;">
-            {['.env','dotenv','dot env','share env','env share','.env file sharing','.env file share','dot env file share','share dot env file','safely share dot env file','.env file share safely','secure dotenv sharing','encrypted env sharing','npx share-env','share-env cli','env file encryption','zero knowledge env sharing','burn after reading env','ephemeral env sharing','env relay server'].map(kw => (
+          <strong>Related topics &amp; keywords:</strong>
+          <div class="kw-cloud">
+            {kwCloud.map(kw => (
               <span class="kw-pill">{kw}</span>
             ))}
           </div>
@@ -103,6 +344,297 @@ const faqSchemaData = faqs.map(f => ({ q: f.q, a: f.a }));
       </div>
     </section>
 
-    <AdSlot slot={undefined} />
+    <!-- CTA -->
+    <section class="faq-cta rv">
+      <div class="faq-cta-inner">
+        <h2>Ready to share your <code>.env</code> file safely?</h2>
+        <p>No accounts. No installation. AES-256-GCM encrypted. Burn-after-reading.</p>
+        <div class="cta-code-block">
+          <code>npx share-env push</code>
+          <button class="copy-btn" onclick="cb(this, 'npx share-env push')" aria-label="Copy command to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="cta-links">
+          <a href="/how-it-works" class="btn-primary">How it works</a>
+          <a href="/docs" class="btn-secondary">Read the docs</a>
+        </div>
+      </div>
+    </section>
+
   </div>
 </Base>
+
+<style>
+  /* Quick-jump nav pills */
+  .faq-jumps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+  }
+  .jump-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(99,102,241,.1);
+    border: 1px solid rgba(99,102,241,.22);
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background .2s, border-color .2s, transform .15s;
+    white-space: nowrap;
+  }
+  .jump-pill:hover {
+    background: rgba(99,102,241,.22);
+    border-color: rgba(99,102,241,.5);
+    transform: translateY(-1px);
+  }
+  .jp-icon,
+  .sec-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: currentColor;
+  }
+  .jp-icon svg,
+  .sec-icon svg {
+    display: block;
+  }
+
+  /* Stats bar */
+  .faq-stats {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 28px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-num {
+    font-size: 1.35rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-size: .72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+  .stat-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255,255,255,.1);
+  }
+
+  /* FAQ group sections */
+  .faq-group {
+    scroll-margin-top: 80px;
+  }
+
+  /* FAQ accordion */
+  .faq-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .acc-item {
+    border-radius: 12px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .acc-item:hover {
+    border-color: rgba(99,102,241,.25);
+  }
+  .acc-item.open {
+    border-color: rgba(99,102,241,.4);
+    box-shadow: 0 0 0 1px rgba(99,102,241,.15);
+  }
+  .acc-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .acc-head:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    border-radius: 11px;
+  }
+  .acc-q-num {
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--accent);
+    opacity: .65;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+  }
+  .acc-q-text {
+    flex: 1;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.45;
+  }
+  .acc-chev {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: transform .25s ease, color .2s;
+  }
+  .acc-item.open .acc-chev {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+  .acc-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .32s ease, padding .32s;
+    padding: 0 20px;
+  }
+  .acc-item.open .acc-body {
+    max-height: 800px;
+    padding: 0 20px 20px;
+  }
+  .acc-answer {
+    font-size: .875rem;
+    color: var(--text-muted);
+    line-height: 1.78;
+    margin: 0;
+  }
+  .acc-answer :global(code) {
+    background: rgba(99,102,241,.12);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: .82em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .acc-answer :global(a) {
+    color: var(--accent);
+    text-underline-offset: 3px;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    transition: text-decoration-color .2s;
+  }
+  .acc-answer :global(a:hover) {
+    text-decoration-color: currentColor;
+  }
+
+  /* Keyword cloud */
+  .kw-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  /* CTA block */
+  .faq-cta-inner {
+    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(167,139,250,.05));
+    border: 1px solid rgba(99,102,241,.28);
+    border-radius: 20px;
+    padding: 44px 40px;
+    text-align: center;
+  }
+  .faq-cta-inner h2 {
+    font-size: clamp(1.3rem, 3vw, 1.85rem);
+    font-weight: 800;
+    margin: 0 0 10px;
+    color: var(--text);
+  }
+  .faq-cta-inner h2 :global(code) {
+    background: rgba(99,102,241,.15);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: .88em;
+  }
+  .faq-cta-inner > p {
+    color: var(--text-muted);
+    font-size: .95rem;
+    margin: 0 0 26px;
+  }
+  .cta-code-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,0,0,.3);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    padding: 12px 20px;
+    margin-bottom: 26px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .95rem;
+    color: var(--text);
+  }
+  .cta-links {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: .875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity .2s, transform .15s;
+  }
+  .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    color: var(--text);
+    font-size: .875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .2s, transform .15s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,.12); transform: translateY(-1px); }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .faq-jumps { gap: 6px; }
+    .jump-pill { font-size: .72rem; padding: 5px 10px; }
+    .faq-stats { gap: 16px; padding: 16px 18px; }
+    .stat-num { font-size: 1.1rem; }
+    .stat-divider { display: none; }
+    .acc-head { padding: 13px 14px; gap: 8px; }
+    .acc-body { padding: 0 14px; }
+    .acc-item.open .acc-body { padding: 0 14px 16px; }
+    .faq-cta-inner { padding: 28px 20px; }
+    .cta-code-block { font-size: .82rem; padding: 10px 14px; }
+  }
+</style>

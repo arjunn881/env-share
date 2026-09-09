@@ -1,4 +1,9 @@
+# share-env robots.txt
+# https://env.json2x.com
+
 User-agent: *
 Allow: /
 
+# Sitemap locations
+Sitemap: https://env.json2x.com/sitemap.xml
 Sitemap: https://env.json2x.com/sitemap-index.xml
