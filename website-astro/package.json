@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/copy-sitemap.js",
+    "build": "node scripts/generate-favicons.mjs && astro build && node scripts/copy-sitemap.js",
     "preview": "astro preview",
     "astro": "astro",
     "deploy": "wrangler pages deploy dist"
